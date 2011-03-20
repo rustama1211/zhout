@@ -28,34 +28,8 @@
 			/* TES AMAZON GET_DATA_XML */
 			$this->load->library('zhout/amazon_lib');
 			$_output = $this->amazon_lib->aws_signed_request(array('Operation'=>'BrowseNodeLookup','BrowseNodeId'=>'1036682' ,'ResponseGroup'=>'NewReleases'));
+				var_dump($this->amazon_lib->get_product_update_by_category_level_2());
 			
-			$_data_object = get_object_vars( $_output->BrowseNodes->BrowseNode->TopItemSet);
-			
-			foreach ($_data_object as $_value)
-			{
-				if(is_array( $_value))
-				{
-					echo '<table>';
-					foreach ($_value as $_sub_value)
-					{
-					
-						/*echo '<tr>';
-						echo 'ASIN : '.$_sub_value->ASIN.'\n';
-		   				echo 'Title : '.$_sub_value->Title.'\n';
-						echo  'Detail Page : '. $_sub_value->DetailPageURL.'\n';
-						echo 'Product_Group : '.$_sub_value->ProductGroup.'\n';
-						echo '</tr>';*/
-						
-						$_product_item_detail = $this->amazon_lib->aws_signed_request(array('Operation'=>'ItemLookup','ItemId'=>$_sub_value->ASIN,'ResponseGroup'=>'Images,ItemAttributes,ItemIds'));
-						var_dump($_product_item_detail);
-					}
-					
-					echo '\n';
-				
-				
-				}
-			
-			}
 			
 			//$this->load->library('zhout/zhout_lib');
 			//$data['_page'] 	= 'zhout/zhout_content';

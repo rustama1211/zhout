@@ -17,9 +17,68 @@ class Amazon_lib
 			foreach ($_data as $_index => $_value)
 			{
 				$_category_amazon = $this->aws_signed_request(array('Operation'=>'BrowseNodeLookup','BrowseNodeId'=>$_value['id_category']));
-				var_dump($_category_amazon);
+				$_browse_node_children = get_object_vars($_category_amazon->BrowseNodes->BrowseNode->Children);
+				$_browse_node_parent = $_category_amazon->BrowseNodes->BrowseNode->BrowseNodeId;
+				
+				foreach ($_browse_node_children as $_value_node_children)
+				{
+					//$this->CI->model_amazon->add_category_amazon_by_parent_id
+					if (is_array($_value_node_children))
+					{
+						foreach ($_value_node_children as $_value_child)
+						{
+							$this->CI->model_amazon->add_category_amazon_by_parent_id(array('id_category'=>$_value_child->BrowseNodeId,'category_name'=>(string) $_value_child->Name,'parent_category'=>$_browse_node_parent));
+						}
+					}
+					
+				}
+				
 			}	
 		}
+	}
+	
+	function get_product_update_by_category_level_2()
+	{
+		//var_dump($this->amazon_lib->get_product_update_by_category_level_2());
+		$_data = $this->CI->model_amazon->get_product_category_amazon_level_2();
+		foreach ($_data as $_value)
+		{
+		$_output =$this->aws_signed_request(array('Operation'=>'BrowseNodeLookup','BrowseNodeId'=>$_value['id_category'] ,'ResponseGroup'=>'NewReleases'));
+		$_data_object = get_object_vars( $_output->BrowseNodes->BrowseNode->TopItemSet);
+		
+			if (! empty($_data_object))
+			{
+			foreach ($_data_object as $_value)
+				{
+					if(is_array( $_value))
+					{
+						//echo '<table>';
+						foreach ($_value as $_sub_value)
+						{
+						
+							//echo '<tr>';
+							//echo 'ASIN : '.$_sub_value->ASIN.'\n';
+			   				//echo 'Title : '.$_sub_value->Title.'\n';
+							//echo  'Detail Page : '. $_sub_value->DetailPageURL.'\n';
+							//echo 'Product_Group : '.$_sub_value->ProductGroup.'\n';
+							//echo '</tr>';
+							
+							$_product_item_detail = $this->aws_signed_request(array('Operation'=>'ItemLookup','ItemId'=>$_sub_value->ASIN,'ResponseGroup'=>'Images,ItemAttributes,ItemIds'));
+							
+							var_dump($_product_item_detail->Items->Item->ItemAttributes->Label);
+							
+							//var_dump($_product_item_detail);
+						}
+						//echo '</table>';
+				
+					}
+				
+				}
+		
+			}
+		}
+		
+		//var_dump($_data);
 	}
 	      
     function aws_signed_request($params = array())
@@ -94,8 +153,20 @@ class Amazon_lib
        $request = "http://".$host.$uri."?".$canonicalized_query."&Signature=".$signature;
    
        // do request
-       $response = @file_get_contents($request);
-   
+	   //Initialize the Curl session
+		$ch = curl_init();
+		//Set the URL
+		curl_setopt($ch, CURLOPT_URL, $request);
+		//Set curl to return the data instead of printing it to the browser.
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,50);		
+		//Execute the fetch
+		$response = curl_exec($ch);
+		//Close the connection
+		curl_close($ch);	
+		/*File Get Contents Lebih Lama*/
+		//$response =@file_get_contents($request);
+		//var_dump($response);
        if ($response === False)
        {
            return False;
