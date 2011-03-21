@@ -8,7 +8,9 @@ class Amazon_lib
 		$this->CI =& get_instance();
 		$this->CI->load->config('zhout/amazon_config');
 		$this->CI->load->model('zhout/model_amazon');
+		$this->CI->load->helper('form');
 	}
+	
 	
 	function update_category_amazon()
 	{
@@ -43,6 +45,7 @@ class Amazon_lib
 		$_data = $this->CI->model_amazon->get_product_category_amazon_level_2();
 		foreach ($_data as $_value)
 		{
+			
 		$_output =$this->aws_signed_request(array('Operation'=>'BrowseNodeLookup','BrowseNodeId'=>$_value['id_category'] ,'ResponseGroup'=>'NewReleases'));
 		$_data_object = get_object_vars( $_output->BrowseNodes->BrowseNode->TopItemSet);
 		
@@ -52,7 +55,7 @@ class Amazon_lib
 				{
 					if(is_array( $_value))
 					{
-						//echo '<table>';
+						echo '<table>';
 						foreach ($_value as $_sub_value)
 						{
 						
@@ -65,11 +68,24 @@ class Amazon_lib
 							
 							$_product_item_detail = $this->aws_signed_request(array('Operation'=>'ItemLookup','ItemId'=>$_sub_value->ASIN,'ResponseGroup'=>'Images,ItemAttributes,ItemIds'));
 							
-							var_dump($_product_item_detail->Items->Item->ItemAttributes->Label);
+							//var_dump($_product_item_detail->Items->Item);
 							
-							//var_dump($_product_item_detail);
+							$_data_product = array ( 'id_product' =>(string)$_product_item_detail->Items->Item->ASIN,
+													 'product_brand'=>(''!=(string)$_product_item_detail->Items->Item->ItemAttributes->Label)?(string)$_product_item_detail->Items->Item->ItemAttributes->Label:'Not Available',
+													 'product_detail_page_link'=>(string)$_product_item_detail->Items->Item->DetailPageURL,
+													 'product_image_link'=>(string)$_product_item_detail->Items->Item->MediumImage->URL,
+													 'product_date_add' => strtotime(date("Y-m-d H:i:s")),
+													 'product_title' =>(string)$_product_item_detail->Items->Item->ItemAttributes->Title,
+													 'product_price' => ('' != (string)$_product_item_detail->Items->Item->ItemAttributes->ListPrice->FormattedPrice)?(string)$_product_item_detail->Items->Item->ItemAttributes->ListPrice->FormattedPrice:'Not Available',
+													 'id_category' =>$_value['id_category']
+													);
+												
+												
+							$this->CI->model_amazon->add_product_amazon($_data_product);
+							
+							//var_dump($_product_item_detail->Items->Item->MediumImage->URL);
 						}
-						//echo '</table>';
+						echo '</table>';
 				
 					}
 				
@@ -159,14 +175,14 @@ class Amazon_lib
 		curl_setopt($ch, CURLOPT_URL, $request);
 		//Set curl to return the data instead of printing it to the browser.
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,50);		
+		curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,5);		
 		//Execute the fetch
 		$response = curl_exec($ch);
 		//Close the connection
 		curl_close($ch);	
 		/*File Get Contents Lebih Lama*/
 		//$response =@file_get_contents($request);
-		//var_dump($response);
+		
        if ($response === False)
        {
            return False;

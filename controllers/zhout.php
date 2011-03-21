@@ -28,7 +28,7 @@
 			/* TES AMAZON GET_DATA_XML */
 			$this->load->library('zhout/amazon_lib');
 			$_output = $this->amazon_lib->aws_signed_request(array('Operation'=>'BrowseNodeLookup','BrowseNodeId'=>'1036682' ,'ResponseGroup'=>'NewReleases'));
-				var_dump($this->amazon_lib->get_product_update_by_category_level_2());
+			$this->amazon_lib->get_product_update_by_category_level_2();
 			
 			
 			//$this->load->library('zhout/zhout_lib');
@@ -40,6 +40,12 @@
 		{
 			$this->load->library('zhout/amazon_lib');
 			$this->amazon_lib->update_category_amazon();
-		} 	
+		} 
+		
+		function show_zappos_product()
+		{
+			$this->load->library('zhout/zappos_lib');
+			$this->zappos_lib->add();
+		}	
    }
 ?>
