@@ -50,7 +50,7 @@
 			<!-- Date Time Member format  Thursday, at 4:40pm  -->
 	        <div class="time">Thursday, at 4:40pm</div>
 	        <div class="desc_wish">
-	        	<!-- User Name Firt + Mid + Last Name  -->
+	        	<!-- User Name Firt + Mid + Last Name / Product Name -->
 	        	<h2 class="name_user">Ciero Mid Blue</h2>
 				<!-- Product Name  -->
 	            <p>Adidas</p>

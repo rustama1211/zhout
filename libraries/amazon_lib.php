@@ -80,7 +80,7 @@ class Amazon_lib
 													 'id_category' =>$_value['id_category']
 													);
 												
-												
+								//var_dump($_data_product);				
 							$this->CI->model_amazon->add_product_amazon($_data_product);
 							
 							//var_dump($_product_item_detail->Items->Item->MediumImage->URL);

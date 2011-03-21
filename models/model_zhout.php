@@ -6,12 +6,74 @@
 			parent::__construct();
 		}
 		
-			function get_id_friends($id_member)
+	/* ------ NEW MODEL FUNCTION ----*/
+	function get_id_friends($id_member)
 	{
 	$data =$this->db->query("SELECT id_member FROM tb_zhopie_friends WHERE id_member_friend='".$id_member."' and status=2 UNION
     SELECT id_member_friend FROM tb_zhopie_friends WHERE id_member='".$id_member."' and status=2;");
     return $data->result_array();
 	}
+	
+	function get_wishes_product_by_id_product($_id_product)
+	{
+		$this->db->select('*');
+		$this->db->where('id_product',$_id_product);
+		$_data = $this->db->get('tb_wishes_product');
+		
+		if ( $_data->num_rows())
+		{
+			$_data_return = array_shift($_data->result_array());
+			return $_data_return['count_wishes_product'];
+		}
+		else
+		{
+			return FALSE;
+		}
+	}
+	
+	function get_post_data_by_id_member($_id_member)
+	{
+		$_friends_and_me = $this->get_id_friends($_id_member);
+		$text = "SELECT DISTINCT tb_zhopie_zhout.id_zhout from tb_zhopie_zhout JOIN tb_relation_zhout ON tb_zhopie_zhout.id_zhout = tb_relation_zhout.id_zhout LEFT JOIN tb_zhopie_profile ON tb_zhopie_profile.id_member = tb_zhopie_zhout.id_member WHERE ";
+		//LEFT JOIN tb_follow on tb_follow.id_shop = tb_zhopie_zhout.id_shop // tb_follow.id_member = '004'
+		$inc = 0;
+		$add_text ="";
+		foreach($_friends_and_me as $value)
+		{
+			if(!is_array($value))
+			{
+			$add_text .=  "tb_zhopie_zhout.id_member = '".$value."'";
+			}
+			else
+			{
+				if($inc == 0)
+				{
+					$add_text .=  "tb_zhopie_zhout.id_member = '".$value['id_member']."'";
+				}
+				else if($inc < count($friends)-1)
+				{
+					$add_text .= " or tb_zhopie_zhout.id_member ='".$value['id_member']."'";
+				}
+				else
+				{
+					$add_text .= " or tb_zhopie_zhout.id_member ='".$value['id_member']."'" ;
+				}
+				
+		
+		    }
+		$inc ++;
+		}
+		
+		$text .= $add_text." order by tb_zhopie_zhout.id_zhout desc limit 0,10";
+		
+			$result = $this->db->query($text);
+			return $result;
+		
+	}
+	
+	/*----- END NEW MODEL FUNCTIOn ---*/
+		
+	
 	
 	function insert_wall($data)
 	{

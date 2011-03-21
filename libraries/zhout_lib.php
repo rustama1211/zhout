@@ -19,8 +19,13 @@
 								   
 								  );
 		$this->CI->load->helper('zhout/add_this');	
+		
+		/* Load Model Amazon And Zappos And Shops Zhopie*/
+		$this->CI->load->model('zhout/model_amazon');
+		$this->CI->load->model('zhout/model_zappos');
+		 
 	}
-	
+	/* ------- JAVA SCRIPT ---------- */
 	function data_javascript()
 	{
 		return 'var index_friend = location.href.substring(location.href.lastIndexOf(\'\/\'), location.href.length);
@@ -71,11 +76,94 @@
 		});	';
 	}
 	
+	/* ------- END JAVA SCRIPT ---------- */
+	
+	/* ------------- NEW FETCH DATA ------------- */
+	function get_feeds_zhout_by_id_member($_id_member)
+	{
+		
+	}
+	/* ------------- END FETCH DATA ------------- */
 	
 	
+	/*------------- ZHOUT CONTENT CONDITION -------*/
 	
 	
+	function get_product_update_source($_id_zhout,$_id_source,$_id_product)
+	{
+		switch ($_id_source)
+		{
+			case 'zhop in zhopie(id_product)' :           break;
+			
+			case 'zhop eksternal amazon' :  $_data_amazon_product = $this->CI->model_amazon->get_product_amazon_by_id($_id_product); 
+											if ($_data_amazon_product)
+											{
+												return $this->CI->load->view('zhout/zhout_product_update_single',$_data_amazon_product);
+											}
+											else
+											{
+												throw 'Data Product Amazon tidak ada';
+											}
+											break;
+			
+			case 'zhop eksternal zappos' :  $_data_zappos_product = $this->CI->model_zappos->get_product_zappos_by_id($_id_product); 
+											if ($_data_amazon_product)
+											{
+												return $this->CI->load->view('zhout/zhout_product_update_single',$_data_amazon_product);
+											}
+											else
+											{
+												throw 'Data Product Amazon tidak ada';
+											}
+											break;			
+		}
+	}
 	
+	function get_post_zhout($_id_zhout)
+	{
+		
+	}
+	
+	function get_wishes_product($_id_product)
+	{
+		
+	}
+	
+	/*------------- ZHOUT CONTENT CONDITION -------*/
+	
+	/*------------------ GET ZHOUT ATTRIBUTE ----------------*/
+	/*---(E.g 'wishes product','addthis button','comment')---*/
+	/**
+	 * @type public function
+	 * @param string $_type  ('wishes_product','addthis_button','comment')
+	 * @param string $_id_product
+	 * @param int $_id_zhout 
+	 * @return object html
+	 */
+	function get_attribute_by_type($_type,$_id_product,$_id_zhout)
+	{
+		switch($_type)
+		{
+			case 'wishes_product' : $_wishes_product = $this->model_zhout->get_wishes_product_by_id_product($_id_product);
+									if($_wishes_product)
+									{
+										return 'Wishes('.$_wishes_product.')';
+									}
+									else
+									{
+									 	return 'Wishes(0)';	
+									}
+									break;
+			case 'addthis_button' : 
+									break;
+			case 'comment'		  : 
+									break;
+		}
+	}
+	
+	/*----------------- END ZHOUT ATTRIBUTE -----------------*/
+	
+	/* ------------- NEW FUNCTION ------------- */
 	function get_zhout_content_by_id_member($_id_member)
 	{
 		$_data = array();
@@ -99,8 +187,9 @@
 		 return $this->CI->load->view('zhout/zhout_content',$_data,TRUE);
 	}
 	
+	/* ------------- END FUNCTION ------------- */
 	
-	
+	/* --------------- OLD FUNCTION ------------------- */
 	private function get_newsfeeds($user_id)
 	{
 		$this->load->helper('directory');
@@ -194,6 +283,8 @@
 		$return_data['info_shop'] = $info_shop;
 		return $return_data;
 	}
+	
+	/* --------------- END OLD FUNCTION ------------------- */
 }
     
 ?>

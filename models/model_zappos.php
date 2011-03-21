@@ -29,5 +29,18 @@
 			$_data = $this->db->get('tb_zappos_category');
 			return $_data->result_array();
 		 }
+		 
+		  /*----------------------------------------------*
+		 * 												*
+		 * ------Get Zappos Product By Id Product ------*
+		 * 												*
+		 *----------------------------------------------*/ 
+		 function get_product_zappos_by_id($_id_product)
+		 {
+		 	$this->db->select('*');
+			$this->db->where('id_product',$_id_product);
+			$_data = $this->db->get('tb_zappos_product');
+			return array_shift($_data->result_array());
+		 }
 	}
 ?>

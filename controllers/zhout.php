@@ -46,6 +46,8 @@
 		{
 			$this->load->library('zhout/zappos_lib');
 			$this->zappos_lib->add();
-		}	
+		}
+		
+		
    }
 ?>

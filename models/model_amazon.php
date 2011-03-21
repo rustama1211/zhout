@@ -6,13 +6,7 @@
 	 	parent::__construct();
 	 }
 	 
-	 function add_product_amazon($_data = array())
-	 {
-	 	$this->insert('tb_amazon_category',$_data);
-	 }
-	 
-	 
-	 
+		 
 	/*----------------------------------------------*
 	 * 												*
 	 * --- Get Category Default Product Amazon -----*
@@ -23,7 +17,7 @@
 	 	$this->db->select('*');
 		$this->db->where('parent_category IS NULL');
 		$_data = $this->db->get('tb_amazon_category');
-		if(count($_data->num_rows))
+		if($_data->num_rows())
 		{
 			return $_data->result_array();
 		}
@@ -52,12 +46,44 @@
 	 	$this->db->select('*');
 		$this->db->where('parent_category IS NOT NULL');
 		$_data = $this->db->get('tb_amazon_category');
-		if(count($_data->num_rows))
+		if($_data->num_rows())
 		{
 			return $_data->result_array();
 		}
 		
 		return FALSE;
 	 }
+	 
+	 /*----------------------------------------------*
+	 * 												*
+	 * --------- Insert Product Amazon  ------------*
+	 * 												*
+	 *----------------------------------------------*/		
+	 function  add_product_amazon($_data = array())
+	 {
+	 	$this->db->ignore();
+	 	$this->db->insert('tb_amazon_product',$_data);
+	 }
+	 
+	 /*----------------------------------------------*
+	 * 												*
+	 * -------- Get Product Amazon By Id  ----------*
+	 * 												*
+	 *----------------------------------------------*/		
+	 function  get_product_amazon_by_id($_id_product)
+	 {
+	 	$this->db->select('*');
+		$this->db->where('id_product',$_id_product);
+	 	$_data_amazon_product = $this->db->get('tb_amazon_product');
+		if (count($_data_amazon_product->result_array()))
+		{
+			return array_shift($_data_amazon_product->result_array());
+		}
+		else
+		{
+			return FALSE;
+		}
+	 }
+	 
    }
 ?>
