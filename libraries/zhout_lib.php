@@ -3,9 +3,29 @@
 {
 	private $CI = NULL;
 	private $_INPUT_DATA = array();
-	private $_AJAX_URL = 'zhout/zhout/add_zhout';
+	
+	//Type of ajax is POST
+	private $_AJAX_URL_ADD_ZHOUT = 'zhout/ajax_zhout/add_zhout';
+	private $_AJAX_URL_ADD_COMMENT = 'zhout/ajax_zhout/add_comment';
+	// End
+	
+	//must append with id_member + id_zhout;
+	private $_AJAX_URL_CLICK_COMMENT = 'zhout/ajax_zhout/get_dropdown_comment/';
+	
+	//must append with  id_zhout;
+	private $_AJAX_URL_SHOW_MORE_COMMENT = 'zhout/ajax_zhout/show_more_comment/';
+	
+	//must append with id_member 
+	private $_AJAX_URL_SHOW_MORE_ZHOUT = 'zhout/ajax_zhout/show_more_zhout/';
+	
+	//must append with id_member + id_product
+	private $_AJAX_URL_ADD_WISHLIST = 'zhout/ajax_zhout/add_wishlist';
+	
+	//delete zhout
+	
 	private $_DEFAULT_ZHOUT_POST = 'Write Your Wish';
 	private $_DEFAULT_ZHOUT_COMMENT = 'Write\'s your comment';
+	private $_LIMIT_ZHOUT = 10;
 	
 	
 	function __construct()
@@ -23,16 +43,15 @@
 		/* Load Model Amazon And Zappos And Shops Zhopie*/
 		$this->CI->load->model('zhout/model_amazon');
 		$this->CI->load->model('zhout/model_zappos');
+		/* NOTE */
+		/* Must load member profile from model_member*/
 		 
 	}
 	/* ------- JAVA SCRIPT ---------- */
-	function data_javascript()
+	function variable_zhout_javascript($_id_member)
 	{
-		return 'var index_friend = location.href.substring(location.href.lastIndexOf(\'\/\'), location.href.length);
-		if(index_friend ==\'/index\')
-		{
-			index_friend = \'/\';
-		}';
+		$this->CI->bep_site->set_variable('id_member',$_id_member);
+		
 	}
 	function text_area_javascript()
 	{
@@ -62,7 +81,7 @@
 			var a = $("#watermark").val();
 			if(a != "'.$this->_DEFAULT_ZHOUT_POST.'")
 			{
-					$.post(\''.site_url(array($this->_AJAX_URL)).'\',{value:a}, function(response)
+					$.post(\''.site_url(array($this->_AJAX_URL_ADD_ZHOUT)).'\',{value:a}, function(response)
 					{
 					$(\'#posting\').prepend($(response).fadeIn(\'slow\'));
 					$("#watermark").val("'.$this->_DEFAULT_ZHOUT_POST.'");
@@ -79,21 +98,32 @@
 	/* ------- END JAVA SCRIPT ---------- */
 	
 	/* ------------- NEW FETCH DATA ------------- */
-	function get_feeds_zhout_by_id_member($_id_member)
+	function get_feeds_zhout_by_id_member($_id_member,$_offset = 0)
 	{
+		//condition
+		/*if (type = 1) then get_product_update_source
+		 * if (type = 2) then get post zhout
+		 * if (type = 3) then get wishes product
+		 */
 		
 	}
 	/* ------------- END FETCH DATA ------------- */
 	
 	
 	/*------------- ZHOUT CONTENT CONDITION -------*/
-	
+	/**
+	 * @param int $_id_zhout
+	 * @param int (enum type product) e.g 1 = zhop in zhopie, 2 = zhop in amazon, 3 = zhop in zappos
+	 * @return object html
+	 * Description : Only return view zhout posting
+	 */
 	
 	function get_product_update_source($_id_zhout,$_id_source,$_id_product)
 	{
 		switch ($_id_source)
 		{
-			case 'zhop in zhopie(id_product)' :           break;
+			case 'zhop in zhopie(id_product)' :  /*Note Need to be relation with model shop to get appropriate data */
+			       							 break;
 			
 			case 'zhop eksternal amazon' :  $_data_amazon_product = $this->CI->model_amazon->get_product_amazon_by_id($_id_product); 
 											if ($_data_amazon_product)
@@ -119,12 +149,21 @@
 		}
 	}
 	
+	/**
+	 * @param int $_id_zhout
+	 * @return object html
+	 * Description : Only return view zhout posting
+	 */
 	function get_post_zhout($_id_zhout)
 	{
 		
 	}
-	
-	function get_wishes_product($_id_product)
+	/**
+	 * @param int $_id_product
+	 * @return object html
+	 * Description : Only return wishes product
+	 */
+	function get_wishes_product($_id_member,$_id_product,$_id_zhout)
 	{
 		
 	}
@@ -140,23 +179,49 @@
 	 * @param int $_id_zhout 
 	 * @return object html
 	 */
-	function get_attribute_by_type($_type,$_id_product,$_id_zhout)
+	function get_attribute_by_type($_type,$_id_member,$_id_product,$_id_zhout,$_data_product = array())
 	{
 		switch($_type)
 		{
 			case 'wishes_product' : $_wishes_product = $this->model_zhout->get_wishes_product_by_id_product($_id_product);
+									//Must relate with model wishlist return must an integer
+									$_wishlist_already_added = $this->model_wishlist->get_wishlist($_id_member,$_id_product);
+									
+									$_wishlist_html ='';
+									$_wishlist_html ='<a href="javascript:void(0); class="'.(($_wishlist_already_added)?'add_wishlist' :'').'"
+													   id="'.$_id_product.'">';
 									if($_wishes_product)
 									{
-										return 'Wishes('.$_wishes_product.')';
+										$_wishlist_html .= 'Wishes('.$_wishes_product.')';
 									}
 									else
 									{
-									 	return 'Wishes(0)';	
+									 	$_wishlist_html .= 'Wishes(0)';	
 									}
+									$_wishlist_html .= '</a>';
+									return $_wishlist_html;
 									break;
 			case 'addthis_button' : 
+									return '<div class="addthis_toolbox addthis_default_style "
+						  			addthis:url="'.$_data_url = ((isset($_data_product['product_detail_page_link']))? $_data_product['product_detail_page_link']:'product internal').'"
+       					  			addthis:title="'.$_data_title =((isset($_data_product['product_detaill']))? $_data_product['product_detail_page_link']:'product internal').'"
+                          			addthis:description="'.$_data_desc =((isset($_data_product['desc']))?$_data_product['desc']:'' ).'">
+									<a class="addthis_counter addthis_pill_style"></a>
+									</div>';
+			                     
 									break;
-			case 'comment'		  : 
+			case 'comment'		  : $_data_comment =$this->model_zhout->get_comment_by_id_zhout($_id_zhout);
+									if(count($_data_comment))
+									{
+										$_data_view_comment = array();
+										if(count($_data_comment)> 2)
+										{
+											$_data_view_comment['_show_all_comment'] = TRUE;
+											$_data_view_comment['_data_comment'] = $_data_comment;
+											return $this->load->view('zhout/comment_view',$_data_view_comment,TRUE);
+										}
+									}
+									return FALSE;	
 									break;
 		}
 	}
@@ -164,15 +229,32 @@
 	/*----------------- END ZHOUT ATTRIBUTE -----------------*/
 	
 	/* ------------- NEW FUNCTION ------------- */
+	/**
+	 * @param string $_id_member
+	 * @return object html 
+	 */
 	function get_zhout_content_by_id_member($_id_member)
 	{
 		$_data = array();
-		$_dropdowsn_value = array('merc'=>'mercedes','toyota'=>'toyota');
+		$_data_category = $this->CI->model_zhout->get_category_zhout($_id_member);
+		$_dropdown_value = array();
+		if(count($_data_category)== 0)
+		{
+			unset($this->_INPUT_DATA['category_filter']);
+		}
+		else
+		{
+			
+			foreach ($_data_category as $_index =>$_value_category)
+			{
+				$_dropdown_value[$_index] = $_value_category;
+			}
+		}
 		foreach($this->_INPUT_DATA as $_index =>$_value)
 		{
 			if(  isset($_value['type'])  && $_value['type'] == 'form_dropdown')
 			{
-				$_data[$_index] = call_user_func($_value['type'],$_value['name'],$_dropdowsn_value,$_value['value']);
+				$_data[$_index] = call_user_func($_value['type'],$_value['name'],$_dropdown_value,$_value['value']);
 			}
 			else if (isset($_value['type']))
 			{
@@ -190,7 +272,7 @@
 	/* ------------- END FUNCTION ------------- */
 	
 	/* --------------- OLD FUNCTION ------------------- */
-	private function get_newsfeeds($user_id)
+	function get_newsfeeds($user_id)
 	{
 		$this->load->helper('directory');
 		$return_data = array();
@@ -284,7 +366,7 @@
 		return $return_data;
 	}
 	
+	
 	/* --------------- END OLD FUNCTION ------------------- */
 }
-    
-?>
+?> 

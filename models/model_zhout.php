@@ -14,6 +14,14 @@
     return $data->result_array();
 	}
 	
+	function get_category_zhout($_id_member)
+	{
+		$this->db->select('*');
+		$this->db->where('id_member',$_id_member);
+		$_data_category =$this->db->get('tb_category_zhout');
+		return $_data_category->result_array();
+	}
+	
 	function get_wishes_product_by_id_product($_id_product)
 	{
 		$this->db->select('*');
@@ -70,6 +78,36 @@
 			return $result;
 		
 	}
+	
+	function count_total_comment_by_id_zhout($_id_zhout)
+	{
+		$this->db->select('count(*) as total_count');
+		$this->db->where('id_zhout',$_id_zhout);
+		$_data = $this->db->get('tb_zhout_comment');
+		$data = array_shift($_data->result_array());
+		return (count($data))? $data['total_count'] : 0 ;
+	}
+	
+	function get_comment_by_id_zhout($_id_zhout,$_offset = 0 , $_limit = FALSE)
+	{
+		//$this->db->query("SELECT *,UNIX_TIMESTAMP() - date AS CommentTimeSpent where  id_zhout = '".$p_id."' order by id_comment asc;");//
+		$_count_all = $this->count_total_comment_by_id_zhout($_id_zhout);
+		$this->db->select('*,UNIX_TIMESTAMP() - date AS CommentTimeSpent');
+		$this->db->where('id_zhout',$_id_zhout);
+		if($_limit)
+		{
+			$this->db->limit($_limit,$_offset);
+		}else
+		{
+			//for showing first comment with 2 row record only, offset must set to 2;
+			$this->db->limit($_count_all,$_offset);
+		}
+		$result = $this->db->get('tb_zhout_comment');
+		return $result->result_array();
+	}
+	
+	
+	
 	
 	/*----- END NEW MODEL FUNCTIOn ---*/
 		

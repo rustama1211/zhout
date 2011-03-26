@@ -43,10 +43,10 @@ class Amazon_lib
 	{
 		//var_dump($this->amazon_lib->get_product_update_by_category_level_2());
 		$_data = $this->CI->model_amazon->get_product_category_amazon_level_2();
-		foreach ($_data as $_value)
+		foreach ($_data as $_value_parent)
 		{
 			
-		$_output =$this->aws_signed_request(array('Operation'=>'BrowseNodeLookup','BrowseNodeId'=>$_value['id_category'] ,'ResponseGroup'=>'NewReleases'));
+		$_output =$this->aws_signed_request(array('Operation'=>'BrowseNodeLookup','BrowseNodeId'=>$_value_parent['id_category'] ,'ResponseGroup'=>'NewReleases'));
 		$_data_object = get_object_vars( $_output->BrowseNodes->BrowseNode->TopItemSet);
 		
 			if (! empty($_data_object))
@@ -77,7 +77,7 @@ class Amazon_lib
 													 'product_date_add' => strtotime(date("Y-m-d H:i:s")),
 													 'product_title' =>(string)$_product_item_detail->Items->Item->ItemAttributes->Title,
 													 'product_price' => ('' != (string)$_product_item_detail->Items->Item->ItemAttributes->ListPrice->FormattedPrice)?(string)$_product_item_detail->Items->Item->ItemAttributes->ListPrice->FormattedPrice:'Not Available',
-													 'id_category' =>$_value['id_category']
+													 'id_category' =>$_value_parent['id_category']
 													);
 												
 								//var_dump($_data_product);				

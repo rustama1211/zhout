@@ -10,9 +10,9 @@
 <div class="sort_update">
 	<div class="sort_by">
     	<ul>
-        	<li>Sort by</li>
-            <li><!-- Combo Filter by Category  -->
-			<?php echo isset($category_filter) ? $category_filter:'';?>
+        	
+            <!-- Combo Filter by Category  -->
+			<?php echo isset($category_filter) ? '<li>Sort by</li><li>'.$category_filter.'</li>':'';?>
                <!-- <select>
                   <option value="volvo">Volvo</option>
                   <option value="saab">Saab</option>
@@ -20,7 +20,7 @@
                   <option value="audi">Audi</option>
                 </select>-->
 				<!-- End Combo Filter by Category  -->
-            </li>
+            
         </ul>
         <div class="clear"></div>
     </div>
