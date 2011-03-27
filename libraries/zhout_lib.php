@@ -4,6 +4,13 @@
 	private $CI = NULL;
 	private $_INPUT_DATA = array();
 	
+	//id_member parameter
+	public $_ID_MEMBER_PARAMETER = 'id_member';
+	//zhout parameter 
+	public $_ZHOUT_PARAMETER = 'zhout_data';
+	//comment parameter
+	public $_COMMENT_PARAMETER = '';
+	
 	//Type of ajax is POST
 	private $_AJAX_URL_ADD_ZHOUT = 'zhout/ajax_zhout/add_zhout';
 	private $_AJAX_URL_ADD_COMMENT = 'zhout/ajax_zhout/add_comment';
@@ -57,16 +64,20 @@
 								   'button_zhout'=>array('value'=>'<a href="javascript:void(0);" id="shareButton"><div class="btn_zhout">Zhout</div></a>'),
 								   'category_filter'=>array('type'=>'form_dropdown','value'=>array('id'=>'category_filter','onChange'=>'changeCategory(this);'),'name'=>'category_filter'),
 								   'comment_text'=>array('type'=>'form_textarea','value'=> array('id'=>'comment','name'=>'comment_text','cols'=>'50','style'=>"height:10px;resize:none",'class'=>'comment')),
-								   'most_active' => array('value'=>'<a href="javascript:void(0);" onClick="mostActive(this);" class="default_active current_active" id="most_active" >Most Active</a>'),
-								   'last_update' => array('value'=>'<a href="javascript:void(0);" onClick="lastUpdate(this);" class="default_active"id="last_update" >Last Update</a>')
+								   'most_active' => array('value'=>'<a href="javascript:void(0);" onClick="mostActive(this);" class="default_active" id="most_active" >Most Active</a>'),
+								   'last_update' => array('value'=>'<a href="javascript:void(0);" onClick="lastUpdate(this);" class="default_active current_active"id="last_update" >Last Update</a>')
 								  );
 		$this->CI->load->helper('zhout/add_this');	
 		
 		/* Load Model Amazon And Zappos And Shops Zhopie*/
 		$this->CI->load->model('zhout/model_amazon');
 		$this->CI->load->model('zhout/model_zappos');
+		$this->CI->load->model('product/model_product');
 		/* NOTE */
 		/* Must load member profile from model_member*/
+		
+		/*Load Helper*/
+		$this->CI->load->helper('image/image');
 		 
 	}
 	/* ------- JAVA SCRIPT ---------- */
@@ -99,15 +110,18 @@
 	
 	function button_zhout_javascript()
 	{
-			return '$(\'#shareButton\').click(function(){
+			return '$(\'#shareButton\').click(function(e){
 			var a = $("#watermark").val();
 			if(a != "'.$this->_DEFAULT_ZHOUT_POST.'")
-			{
-					$.post(\''.site_url(array($this->_AJAX_URL_ADD_ZHOUT)).'\',{value:a}, function(response)
+			{		
+					$.post(\''.site_url(array($this->_AJAX_URL_ADD_ZHOUT)).'\',{'.$this->_ZHOUT_PARAMETER.':a,'.$this->_ID_MEMBER_PARAMETER.':id_member}, function(response)
 					{
-					$(\'#posting\').prepend($(response).fadeIn(\'slow\'));
-					$("#watermark").val("'.$this->_DEFAULT_ZHOUT_POST.'");
-					$(\'textarea\').css({height :30});
+						if (response != \'0\')
+						{
+							$(\'#wrap_zhout\').prepend($(response).fadeIn(\'slow\'));
+							$("#watermark").val("'.$this->_DEFAULT_ZHOUT_POST.'");
+							$(\'textarea\').css({height :30});
+						}
 					});				
 			}
 			else 
@@ -168,7 +182,7 @@
 	{
 		return 'function addWishlist(tag)
 				{
-					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_ADD_WISHLIST.'\'+id_member,
+					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_ADD_WISHLIST.'\'+id_member+\'/\'+tag.id+\'/\'+tag.id_source,
 							 dataType   : \'json\',
 							 beforeSend : function()
 							 			{
@@ -253,7 +267,8 @@
 							 			},
 							success : function(response)
 										{
-										$(tag).removeAttr(\'onclick\');	
+											console.log(\'%o\',response);
+										//$(tag).removeAttr(\'onclick\');	
 										}
 						
 						
@@ -274,6 +289,7 @@
 							 			},
 							success : function(response)
 										{
+										
 										$(tag).removeAttr(\'onclick\');	
 										}
 						
@@ -310,10 +326,10 @@
 	{
 		switch ($_id_source)
 		{
-			case 1 :  /*Note Need to be relation with model shop to get appropriate data */
+			case 1 : $_data_zhopie_product = call_user_func(array($this,'get_detail_product_by_id_source_id_product'),1,$_id_product);  
 			       							 break;
 			
-			case 2 :  $_data_amazon_product = $this->CI->model_amazon->get_product_amazon_by_id($_id_product); 
+			case 2 :  $_data_amazon_product = call_user_func(array($this,'get_detail_product_by_id_source_id_product'),2,$_id_product); 
 											if ($_data_amazon_product)
 											{
 												return $this->CI->load->view('zhout/zhout_product_update_single',$_data_amazon_product);
@@ -324,7 +340,7 @@
 											}
 											break;
 			
-			case 3 :  $_data_zappos_product = $this->CI->model_zappos->get_product_zappos_by_id($_id_product); 
+			case 3 :  $_data_zappos_product = call_user_func(array($this,'get_detail_product_by_id_source_id_product'),3,$_id_product); 
 											if ($_data_amazon_product)
 											{
 												return $this->CI->load->view('zhout/zhout_product_update_single',$_data_amazon_product);
@@ -333,7 +349,8 @@
 											{
 												throw 'Data Product Amazon tidak ada';
 											}
-											break;			
+											break;
+			default : throw 'Type sumber product yang diplih tidak ada'; break;			
 		}
 	}
 	
@@ -362,22 +379,21 @@
 	/*---(E.g 'wishes product','addthis button','comment')---*/
 	/**
 	 * @type public function
-	 * @param string $_type  ('wishes_product','addthis_button','comment_view','comment_status')
+	 * @param string $_type  ('wishes_product','addthis_button','comment_view','comment_status','mode_comments')
 	 * @param string $_id_product
 	 * @param int $_id_zhout 
 	 * @return object html
 	 */
-	function get_attribute_by_type($_type,$_id_member,$_id_product,$_id_zhout,$_data_product = array())
+	function get_attribute_by_type($_type,$_id_member=FALSE,$_id_product=FALSE,$_id_zhout=FALSE,$_data_product = array(),$_id_source=NULL)
 	{
 		switch($_type)
 		{
 			case 'wishes_product' : $_wishes_product = $this->model_zhout->get_wishes_product_by_id_product($_id_product);
 									//Must relate with model wishlist return must an integer
-									$_wishlist_already_added = $this->model_wishlist->get_wishlist($_id_member,$_id_product);
-									
+									$_wishlist_already_added = $this->model_product->is_added_stuff($_id_product,$_id_member);
 									$_wishlist_html ='';
-									$_wishlist_html ='<a href="javascript:void(0);"'.(($_wishlist_already_added)?'onClick ="addWishlist(this)"' :'').'"
-													   id="'.$_id_product.'">';
+									$_wishlist_html ='<a href="javascript:void(0);"'.((!$_wishlist_already_added)?'onClick ="addWishlist(this)"' :'').'"
+													   id="'.$_id_product.' id_source="'.$_id_source.'">';
 									if($_wishes_product)
 									{
 										$_wishlist_html .= 'Wishes('.$_wishes_product.')';
@@ -404,6 +420,7 @@
 										$_data_view_comment = array();
 										if(count($_data_comment)> 2)
 										{
+											$_data_comment =$this->model_zhout->get_comment_by_id_zhout($_id_zhout,0,2);
 											$_data_view_comment['_show_all_comment'] = TRUE;
 											$_data_view_comment['_data_comment'] = $_data_comment;
 											return $this->load->view('zhout/comment_view',$_data_view_comment,TRUE);
@@ -432,6 +449,11 @@
 									   
 									   return $_status_comment; 
 									break;
+		  case 'more_comments'		: $_data_comment =$this->model_zhout->get_comment_by_id_zhout($_id_zhout,2);
+		  							  $_data_view_comment['_show_all_comment'] = FALSE;
+									  return $this->load->view('zhout/comment_view',$_data_view_comment,TRUE);
+									  
+		  								
 		}
 	}
 	
@@ -478,7 +500,103 @@
 		 return $this->CI->load->view('zhout/zhout_content',$_data,TRUE);
 	}
 	
+	/**
+	 * @param integer $_id_source e.g 1 = zhopie shop , 2= amazon shop , 3 = zappos shop
+	 * @param string $_id_product
+	 * @return array data detail_product
+	 */
+	
+	function get_detail_product_by_id_source_id_product($_id_source,$_id_product)
+	{
+		switch ($_id_source)
+		{
+			case 1 : return  $this->CI->model_product->get_detail_product($_id_product);
+					break ;
+			case 2 : return  $this->CI->model_amazon->get_product_amazon_by_id($_id_product); 
+					break;
+			case 3 : return $this->CI->model_zappos->get_product_zappos_by_id($_id_product); 
+					break;
+		}
+	}
+	
 	/* ------------- END FUNCTION ------------- */
+	
+	/* ------------- ZHOUT AJAX ACTION AND RESPONSE ------------------- */
+	//get_attribute_by_type($_type,$_id_member=FALSE,$_id_product=FALSE,$_id_zhout=FALSE,$_data_product = array())
+	
+		//Type Is Post
+		function add_zhout($_id_member,$_data_zhout)
+		{
+			//data zhout must be validate to prevent xss 
+			//locate checkValues
+			$_data_inserted = $this->CI->model_zhout->add_zhout(array('zhout_content'=>$_data_zhout,'userip'=>$_SERVER['REMOTE_ADDR'],'id_member'=>$_id_member,'date'=>strtotime(date("Y-m-d H:i:s"))));
+			$_image_url['profil_picture_url'] = checkPicture('null');
+			$_data_inserted = array_merge($_data_inserted,$_image_url);
+			return $this->CI->load->view('zhout/zhout_post_single',$_data_inserted,TRUE);
+		}
+		
+		//End Type Post
+	
+		function get_dropdown_comment($_id_zhout)
+		{
+			return call_user_func(array($this,'get_attribute_by_type'),'comment_view',NULL,NULL,$_id_zhout,NULL,NULL);
+		}
+		
+		function show_more_comment($_id_zhout)
+		{
+			return call_user_func(array($this,'get_attribute_by_type'),'more_comments',NULL,NULL,$_id_zhout,NULL,NULL);
+		}
+		
+		function show_more_zhout($_id_member,$_current_active,$_offset)
+		{
+			
+		}
+		
+		function add_wishlist($_id_member,$_id_product,$_id_source)
+		{
+			//must make a rule to get different product detail depend on id_source
+			
+			$_id_member_session = $this->CI->session->userdata('id_member');
+			//Must relate with model wishlist return must an integer
+			$_wishlist_already_added = $this->CI->model_product->is_added_stuff($_id_product,$_id_member);
+			/*if(!$_wishlist_already_added)
+			{
+				$this->model_zhout->update_wishlist_status($_id_product);
+				$this->model_wishlist->insert_wishlist($_id_member,$_id_product);
+				$data['message'] = ''
+				return 
+			}*/
+		}
+		
+		
+		function delete_zhout($_id_member,$_id_zhout)
+		{
+			
+		}
+		
+		function delete_comment($_id_member,$_id_comment)
+		{
+			
+		}
+		
+		function change_category($_id_zhout)
+		{
+			
+		}
+		
+		function last_update($_id_member)
+		{
+			
+		}
+		
+		function most_active ($_id_member)
+		{
+			
+		}
+	
+	/* ------------- END ZHOUT AJAX ACTION AND RESPONSE -------------- */
+	
+	
 	
 	/* --------------- OLD FUNCTION ------------------- */
 	function get_newsfeeds($user_id)

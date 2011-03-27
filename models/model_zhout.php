@@ -106,6 +106,25 @@
 		return $result->result_array();
 	}
 	
+	function add_zhout($_data_zhout = array())
+	{
+		$this->db->insert('tb_zhopie_zhout',$_data_zhout);
+		$_last_insert = $this->db->insert_id();
+		return $this->get_zhout_by_id_zhout($_last_insert);
+		
+	}
+	
+	function get_zhout_by_id_zhout($_id_zhout)
+	{
+		$this->db->select('*');
+		$this->db->from('tb_zhopie_zhout');
+		$this->db->join('tb_zhopie_profile','tb_zhopie_zhout.id_member =tb_zhopie_profile.id_member');
+		$this->db->where('tb_zhopie_zhout.id_zhout',$_id_zhout);
+		$_data = $this->db->get();
+		
+		return array_shift($_data->result_array());
+	}
+	
 	
 	
 	
