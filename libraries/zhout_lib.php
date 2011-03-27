@@ -110,19 +110,37 @@
 	
 	function button_zhout_javascript()
 	{
-			return '$(\'#shareButton\').click(function(e){
+			return 'var clickedOnce = false; $(\'#shareButton\').click(function(e){
 			var a = $("#watermark").val();
 			if(a != "'.$this->_DEFAULT_ZHOUT_POST.'")
 			{		
-					$.post(\''.site_url(array($this->_AJAX_URL_ADD_ZHOUT)).'\',{'.$this->_ZHOUT_PARAMETER.':a,'.$this->_ID_MEMBER_PARAMETER.':id_member}, function(response)
+					if (! clickedOnce )
 					{
-						if (response != \'0\')
-						{
-							$(\'#wrap_zhout\').prepend($(response).fadeIn(\'slow\'));
-							$("#watermark").val("'.$this->_DEFAULT_ZHOUT_POST.'");
-							$(\'textarea\').css({height :30});
-						}
-					});				
+						$.ajax({url :\''.site_url(array($this->_AJAX_URL_ADD_ZHOUT)).'\',
+								type :\'POST\',
+								data :{'.$this->_ZHOUT_PARAMETER.':a,'.$this->_ID_MEMBER_PARAMETER.':id_member},
+								beforeSend: function()
+										{
+											clickedOnce = true;
+										},
+								success : function(response)
+										{
+											if (response != \'0\')
+											{
+												$(\'#wrap_zhout\').prepend($(response).fadeIn(\'slow\'));
+												$("#watermark").val("'.$this->_DEFAULT_ZHOUT_POST.'");
+												$("#watermark").Watermark("'.$this->_DEFAULT_ZHOUT_POST.'","#369");
+												$(\'textarea\').css({height :30});
+											}
+											clickedOnce = false;
+										},
+								error : function(response)
+										{
+											clickedOnce = false;
+										}
+						
+								});
+					}
 			}
 			else 
 			{

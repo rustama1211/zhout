@@ -1,5 +1,5 @@
 <?php ?>
-<div class="content_status">
+<div class="content_status" id="zhout-<?php echo $id_zhout; ?>>">
    <div class="status">
     	<div class="pict_wish">
     		<!-- Pict Member -->
