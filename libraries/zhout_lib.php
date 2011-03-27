@@ -9,22 +9,43 @@
 	private $_AJAX_URL_ADD_COMMENT = 'zhout/ajax_zhout/add_comment';
 	// End
 	
-	//must append with id_member + id_zhout;
+	//Type of ajax is GET
+	//must append with  id_zhout;
 	private $_AJAX_URL_CLICK_COMMENT = 'zhout/ajax_zhout/get_dropdown_comment/';
 	
 	//must append with  id_zhout;
 	private $_AJAX_URL_SHOW_MORE_COMMENT = 'zhout/ajax_zhout/show_more_comment/';
 	
-	//must append with id_member 
+	//must append with id_member + offset 
 	private $_AJAX_URL_SHOW_MORE_ZHOUT = 'zhout/ajax_zhout/show_more_zhout/';
 	
 	//must append with id_member + id_product
-	private $_AJAX_URL_ADD_WISHLIST = 'zhout/ajax_zhout/add_wishlist';
+	private $_AJAX_URL_ADD_WISHLIST = 'zhout/ajax_zhout/add_wishlist/';
 	
 	//delete zhout
+	//must append with id_member + id_zhout
+	private $_AJAX_URL_DELETE_ZHOUT = 'zhout/ajax_zhout/delete_zhout/';
+	
+	//delete comment
+	//must append with id_member + id_comment
+	private $_AJAX_URL_DELETE_COMMENT = 'zhout/ajax_zhout/delete_comment/';
+	
+	//sort category
+	//must append with id_member + id_comment
+	private $_AJAX_SORT_CATEGORY = 'zhout/ajax_zhout/change_category/';
+	
+	//sort last update 
+	private $_AJAX_SORT_LAST_UPDATE = 'zhout/ajax_zhout/last_update/';
+	
+	//sort last update 
+	private $_AJAX_SORT_MOST_ACTIVE = 'zhout/ajax_zhout/most_active/';
+	
+	
+	//sort
+	//End Type of ajax is GET
 	
 	private $_DEFAULT_ZHOUT_POST = 'Write Your Wish';
-	private $_DEFAULT_ZHOUT_COMMENT = 'Write\'s your comment';
+	private $_DEFAULT_ZHOUT_COMMENT = 'Write your comment';
 	private $_LIMIT_ZHOUT = 10;
 	
 	
@@ -32,11 +53,12 @@
 	{
 		$this->CI =& get_instance();
 		$this->CI->load->model('zhout/model_zhout');
-		$this->_INPUT_DATA = array('zhout_text'=>array('type'=>'form_textarea','value'=> array('id'=>'watermark','name'=>'zhout','value'=>$this->_DEFAULT_ZHOUT_POST)),
+		$this->_INPUT_DATA = array('zhout_text'=>array('type'=>'form_textarea','value'=> array('id'=>'watermark','name'=>'zhout','value'=>$this->_DEFAULT_ZHOUT_POST,'style'=>'resize:none;')),
 								   'button_zhout'=>array('value'=>'<a href="javascript:void(0);" id="shareButton"><div class="btn_zhout">Zhout</div></a>'),
-								   'category_filter'=>array('type'=>'form_dropdown','value'=>array('id'=>'category_filter'),'name'=>'category_filter'),
-								   'comment_text'=>array('type'=>'form_textarea','value'=> array('id'=>'comment','name'=>'comment_text','cols'=>'50','style'=>"height:10px;",'class'=>'comment')),
-								   
+								   'category_filter'=>array('type'=>'form_dropdown','value'=>array('id'=>'category_filter','onChange'=>'changeCategory(this);'),'name'=>'category_filter'),
+								   'comment_text'=>array('type'=>'form_textarea','value'=> array('id'=>'comment','name'=>'comment_text','cols'=>'50','style'=>"height:10px;resize:none",'class'=>'comment')),
+								   'most_active' => array('value'=>'<a href="javascript:void(0);" onClick="mostActive(this);" class="default_active current_active" id="most_active" >Most Active</a>'),
+								   'last_update' => array('value'=>'<a href="javascript:void(0);" onClick="lastUpdate(this);" class="default_active"id="last_update" >Last Update</a>')
 								  );
 		$this->CI->load->helper('zhout/add_this');	
 		
@@ -95,6 +117,172 @@
 		});	';
 	}
 	
+	function last_update_javascript()
+	{
+		return 'function lastUpdate(tag)
+				{
+					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_LAST_UPDATE.'\'+id_member,
+							 dataType   : \'json\',
+							 beforeSend : function()
+							 			{
+							 	
+							 			},
+							success : function(response)
+										{
+											
+										}
+						
+						
+					});*/
+					
+					$(\'.default_active\').removeClass(\'current_active\');
+					$(tag).addClass(\'current_active\');
+					
+				}';
+	}
+	
+	function most_active_javascript()
+	{
+		return 'function mostActive(tag)
+				{
+					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_MOST_ACTIVE.'\'+id_member,
+							 dataType   : \'json\',
+							 beforeSend : function()
+							 			{
+							 	
+							 			},
+							success : function(response)
+										{
+											
+										}
+						
+						
+					});*/
+					$(\'.default_active\').removeClass(\'current_active\');
+					$(tag).addClass(\'current_active\');
+					
+				}';
+	}
+	
+	function add_wishlist_javascript()
+	{
+		return 'function addWishlist(tag)
+				{
+					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_ADD_WISHLIST.'\'+id_member,
+							 dataType   : \'json\',
+							 beforeSend : function()
+							 			{
+							 	
+							 			},
+							success : function(response)
+										{
+										$(tag).removeAttr(\'onclick\');	
+										}
+						
+						
+					});*/
+					
+					
+					
+				}';
+	}
+	
+	function comment_status_javascript()
+	{
+		return 'function commentStatus(tag)
+			{
+				var attr_id = $(tag).Attr(\'id\');
+				attr_id = attr_id.split(\'-\');
+				var found_comment_wrap = $(\'#wrap_comment-\'+attr_id[1]).length;
+				
+				if (found_comment_wrap == 0)
+				{
+					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_CLICK_COMMENT.'\'+id_member,
+							 dataType   : \'json\',
+							 beforeSend : function()
+							 			{
+							 	
+							 			},
+							success : function(response)
+										{
+										$(tag).removeAttr(\'onclick\');	
+										}
+						
+						
+					});*/
+				}
+				
+				
+			}
+		';
+	}
+	
+	function change_category_javascript()
+	{
+		return 'function changeCategory(tag)
+				{
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+tag.value,
+							 dataType   : \'json\',
+							 beforeSend : function()
+							 			{
+							 	
+							 			},
+							success : function(response)
+										{
+										$(tag).removeAttr(\'onclick\');	
+										}
+						
+						
+					});
+					
+				}';
+	}
+	
+	function show_more_zhout_javascript()
+	{
+		return 'function showMoreZhout(tag)
+				{
+					//Must get offset and current active e.g most_active / last_update
+					var offset = $(tag).attr(\'offset\');
+					var current_status = $(\'.current_active\').attr(\'id\');
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+current_status+\'/\'+offset,
+							 dataType   : \'json\',
+							 beforeSend : function()
+							 			{
+							 	
+							 			},
+							success : function(response)
+										{
+										$(tag).removeAttr(\'onclick\');	
+										}
+						
+						
+					});
+					
+				}';
+	}
+	
+	function show_more_comment_javascript()
+	{
+		return 'function showMoreComment(tag)
+				{
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+tag.value,
+							 dataType   : \'json\',
+							 beforeSend : function()
+							 			{
+							 	
+							 			},
+							success : function(response)
+										{
+										$(tag).removeAttr(\'onclick\');	
+										}
+						
+						
+					});
+					
+				}';
+	}
+	
 	/* ------- END JAVA SCRIPT ---------- */
 	
 	/* ------------- NEW FETCH DATA ------------- */
@@ -122,10 +310,10 @@
 	{
 		switch ($_id_source)
 		{
-			case 'zhop in zhopie(id_product)' :  /*Note Need to be relation with model shop to get appropriate data */
+			case 1 :  /*Note Need to be relation with model shop to get appropriate data */
 			       							 break;
 			
-			case 'zhop eksternal amazon' :  $_data_amazon_product = $this->CI->model_amazon->get_product_amazon_by_id($_id_product); 
+			case 2 :  $_data_amazon_product = $this->CI->model_amazon->get_product_amazon_by_id($_id_product); 
 											if ($_data_amazon_product)
 											{
 												return $this->CI->load->view('zhout/zhout_product_update_single',$_data_amazon_product);
@@ -136,7 +324,7 @@
 											}
 											break;
 			
-			case 'zhop eksternal zappos' :  $_data_zappos_product = $this->CI->model_zappos->get_product_zappos_by_id($_id_product); 
+			case 3 :  $_data_zappos_product = $this->CI->model_zappos->get_product_zappos_by_id($_id_product); 
 											if ($_data_amazon_product)
 											{
 												return $this->CI->load->view('zhout/zhout_product_update_single',$_data_amazon_product);
@@ -174,7 +362,7 @@
 	/*---(E.g 'wishes product','addthis button','comment')---*/
 	/**
 	 * @type public function
-	 * @param string $_type  ('wishes_product','addthis_button','comment')
+	 * @param string $_type  ('wishes_product','addthis_button','comment_view','comment_status')
 	 * @param string $_id_product
 	 * @param int $_id_zhout 
 	 * @return object html
@@ -188,7 +376,7 @@
 									$_wishlist_already_added = $this->model_wishlist->get_wishlist($_id_member,$_id_product);
 									
 									$_wishlist_html ='';
-									$_wishlist_html ='<a href="javascript:void(0); class="'.(($_wishlist_already_added)?'add_wishlist' :'').'"
+									$_wishlist_html ='<a href="javascript:void(0);"'.(($_wishlist_already_added)?'onClick ="addWishlist(this)"' :'').'"
 													   id="'.$_id_product.'">';
 									if($_wishes_product)
 									{
@@ -210,7 +398,7 @@
 									</div>';
 			                     
 									break;
-			case 'comment'		  : $_data_comment =$this->model_zhout->get_comment_by_id_zhout($_id_zhout);
+			case 'comment_view'		  : $_data_comment =$this->model_zhout->get_comment_by_id_zhout($_id_zhout);
 									if(count($_data_comment))
 									{
 										$_data_view_comment = array();
@@ -220,8 +408,29 @@
 											$_data_view_comment['_data_comment'] = $_data_comment;
 											return $this->load->view('zhout/comment_view',$_data_view_comment,TRUE);
 										}
+										else if(count($_data_comment)> 0 && count($_data_comment)<=2)
+										{
+											$_data_view_comment['_show_all_comment'] = FALSE;
+											$_data_view_comment['_data_comment'] = $_data_comment;
+											return $this->load->view('zhout/comment_view',$_data_view_comment,TRUE);
+										}
+								
 									}
 									return FALSE;	
+									break;
+			case 'comment_status'	 : $_count_comment = $this->model_zhout->get_comment_by_id_zhout($_id_zhout);
+									   $_status_comment ='<a href ="javascript:void(0)" id="comment_status-'.$_id_zhout.'" onClick="commentStatus(this);" >';
+									   if(count($_count_comment))
+									   {
+									   	$_status_comment .= 'COMMENT('.$_count_comment.')';	
+									   }
+									   else
+									   {
+									   	$_status_comment .= 'COMMENT('.$_count_comment.')';
+									   }
+									   $_status_comment .= '</a>';
+									   
+									   return $_status_comment; 
 									break;
 		}
 	}

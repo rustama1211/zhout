@@ -10,7 +10,47 @@
 		
 		function get_dropdown_comment($_id_zhout)
 		{
-			$this->model_zhout->
+			
+		}
+		
+		function show_more_comment($_id_zhout)
+		{
+			
+		}
+		
+		function show_more_zhout($_id_member,$_current_active,$_offset)
+		{
+			
+		}
+		
+		function add_wishlist($_id_zhout)
+		{
+			
+		}
+		
+		function delete_zhout($_id_member,$_id_zhout)
+		{
+			
+		}
+		
+		function delete_comment($_id_member,$_id_comment)
+		{
+			
+		}
+		
+		function change_category($_id_zhout)
+		{
+			
+		}
+		
+		function last_update($_id_member)
+		{
+			
+		}
+		
+		function most_active ($_id_member)
+		{
+			
 		}
 		
 	}
