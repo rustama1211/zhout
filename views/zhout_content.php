@@ -40,6 +40,9 @@
 </div>
 <div class="clear"></div>
 <div id ="wrap_zhout" >
+	<!-- Load Zhout Content -->
+	<?php  echo isset($_zhout_content)?$_zhout_content :'';?>
+	<!-- End Load Zhout Content -->
 	<div class="content_status">
 		<div class="status">
 	    	<div class="pict_wish">
@@ -87,25 +90,26 @@
 	        </div>
 	        <div class="clear"></div>
 	    </div>
-		<div id = "wrap_comment-<?php echo $_id_zhout = '001'; ?>">
-			 <div class="people_comment">
-		   		<div class="pict_people">
-		        	<img src="<?php echo base_url(); ?>assets/zhopie/images/pict_user.png">
-		        </div>
-		        <div class="desc_people">
-		        	<h2>Kim Kardashian</h2>
-		            <p>My Boyfie wants me to buy this one, love it!</p>
-		            <p>12 Hours ago</p>
-		        </div>
-		        <div class="see_comment">
-		        	<a href="#">see all comment</a>
-		        </div>
-		        <div class="clear"></div>
-		        <!--<input type=" text" value="Write Comment" name="">-->
-				<!-- Comment Text Area-->
-				<?php echo $comment_text; ?>
-				
-	   	    </div>
+		<div id = "wrap_comment-<?php echo $_id_zhout = '001'; ?>" class="people_comment_wrap">
+			 	<div class="see_comment">
+                	<a href="#">see all comment</a>
+                </div>
+                 <div class="people_comment">
+                    <div class="pict_people">
+                        <img src="<?php echo base_url(); ?>assets/zhopie/images/pict_user.png">
+                    </div>
+                    <div class="desc_people">
+                        <h2>Kim Kardashian</h2>
+                        <p>My Boyfie wants me to buy this one, love it!</p>
+                        <p>12 Hours ago</p>
+                    </div>
+                    <div class="clear"></div>
+                    <!--<input type=" text" value="Write Comment" name="">-->
+                    <!-- Comment Text Area-->
+                </div>
+                <?php echo $comment_text; ?>
+                <div class="clear"></div>
+           
 		</div>
     <div class="clear"></div>
 	</div>

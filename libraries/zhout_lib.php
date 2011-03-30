@@ -3,10 +3,11 @@
 {
 	private $CI = NULL;
 	private $_INPUT_DATA = array();
+	private $_IS_MOST_ACTIVE_AS_DEFAULT = TRUE;
 	
-	//id_member parameter
+	//id_member parameter for ajax request
 	public $_ID_MEMBER_PARAMETER = 'id_member';
-	//zhout parameter 
+	//zhout parameter for ajax request
 	public $_ZHOUT_PARAMETER = 'zhout_data';
 	//comment parameter
 	public $_COMMENT_PARAMETER = '';
@@ -63,9 +64,9 @@
 		$this->_INPUT_DATA = array('zhout_text'=>array('type'=>'form_textarea','value'=> array('id'=>'watermark','name'=>'zhout','value'=>$this->_DEFAULT_ZHOUT_POST,'style'=>'resize:none;')),
 								   'button_zhout'=>array('value'=>'<a href="javascript:void(0);" id="shareButton"><div class="btn_zhout">Zhout</div></a>'),
 								   'category_filter'=>array('type'=>'form_dropdown','value'=>array('id'=>'category_filter','onChange'=>'changeCategory(this);'),'name'=>'category_filter'),
-								   'comment_text'=>array('type'=>'form_textarea','value'=> array('id'=>'comment','name'=>'comment_text','cols'=>'50','style'=>"height:10px;resize:none",'class'=>'comment')),
-								   'most_active' => array('value'=>'<a href="javascript:void(0);" onClick="mostActive(this);" class="default_active" id="most_active" >Most Active</a>'),
-								   'last_update' => array('value'=>'<a href="javascript:void(0);" onClick="lastUpdate(this);" class="default_active current_active"id="last_update" >Last Update</a>')
+								   'comment_text'=>array('type'=>'form_textarea','value'=> array('id'=>'comment','name'=>'comment_text','cols'=>'50','style'=>"height:5px;resize:none",'class'=>'comment','onkeypress'=>'return addComment(this,event);')),
+								   'most_active' => array('value'=>'<a href="javascript:void(0);" onClick="mostActive(this);" class="default_active '.$_out = (($this->_IS_MOST_ACTIVE_AS_DEFAULT)?'current_active':'').'" id="most_active" >Most Active</a>'),
+								   'last_update' => array('value'=>'<a href="javascript:void(0);" onClick="lastUpdate(this);" class="default_active '.$_out = ((!$this->_IS_MOST_ACTIVE_AS_DEFAULT)?'current_active':'').'"id="last_update" >Last Update</a>')
 								  );
 		$this->CI->load->helper('zhout/add_this');	
 		
@@ -78,6 +79,7 @@
 		
 		/*Load Helper*/
 		$this->CI->load->helper('image/image');
+		$this->CI->load->helper('directory');
 		 
 	}
 	/* ------- JAVA SCRIPT ---------- */
@@ -125,6 +127,7 @@
 										},
 								success : function(response)
 										{
+											
 											if (response != \'0\')
 											{
 												$(\'#wrap_zhout\').prepend($(response).fadeIn(\'slow\'));
@@ -149,6 +152,41 @@
 		});	';
 	}
 	
+	function add_comment_javascript()
+	{
+		return 'function addComment(tag,e)
+				{	
+					var tmp_onclick =\'\';
+					if(e.keyCode ==13)
+					{
+						if(tag.value !=\'\' && tag.value !=\''.$this->_DEFAULT_ZHOUT_COMMENT.'\' )
+						{
+							$.ajax({url : \''.site_url().'/'.$this->_AJAX_URL_ADD_COMMENT.'\',
+									data : {comment_content :tag.value , id_member:id_member},
+									type : \'POST\',
+									beforeSend : function()
+												{
+													tmp_onclick = $(tag).attr(\'keypress\');
+													$(tag).removeAttr(\'keypress\');
+												},
+									success		: function(response)
+												{
+													var comment_length = $(\'#wrap_comment-\'+tag.id).find(\'people_comment\');
+												$(\'#wrap_comment-\'+tag.id).find(\'people_comment\').eq(comment_length-1).append($(response));
+												$(tag).attr(\'onclick\',tmp_onclick);
+												},
+									error		: function (response)
+												{
+													$(tag).attr(\'onclick\',tmp_onclick);
+												}
+								   });
+						}
+						return false;
+					}
+				
+				}
+		';
+	}
 	function last_update_javascript()
 	{
 		return 'function lastUpdate(tag)
@@ -223,25 +261,25 @@
 	{
 		return 'function commentStatus(tag)
 			{
-				var attr_id = $(tag).Attr(\'id\');
+				var attr_id = $(tag).attr(\'id\');
 				attr_id = attr_id.split(\'-\');
 				var found_comment_wrap = $(\'#wrap_comment-\'+attr_id[1]).length;
-				
 				if (found_comment_wrap == 0)
 				{
-					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_CLICK_COMMENT.'\'+id_member,
-							 dataType   : \'json\',
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_CLICK_COMMENT.'\'+attr_id[1],
 							 beforeSend : function()
 							 			{
 							 	
 							 			},
 							success : function(response)
 										{
+											$(\'#zhout-\'+attr_id[1]).append($(response)).after(\'<div class="clear"></div>\');
+											
 										$(tag).removeAttr(\'onclick\');	
 										}
 						
 						
-					});*/
+					});
 				}
 				
 				
@@ -299,17 +337,24 @@
 	{
 		return 'function showMoreComment(tag)
 				{
-					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+tag.value,
+					var tmp_onclick =\'\';
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+tag.id,
 							 dataType   : \'json\',
 							 beforeSend : function()
 							 			{
-							 	
+							 				tmp_onclick = $(tag).attr(\'onclick\');
+											$(tag).removeAttr(\'onclick\');
 							 			},
 							success : function(response)
-										{
-										
+									   {
+										var comment_length = $(\'#wrap_comment-\'+tag.id).find(\'people_comment\');
+										$(\'#wrap_comment-\'+tag.id).find(\'people_comment\').eq(comment_length-1).append($(response));
 										$(tag).removeAttr(\'onclick\');	
-										}
+									   },
+							error	:function(response)
+									   {
+										 $(tag).attr(\'onclick\',tmp_onclick);	
+									   }
 						
 						
 					});
@@ -320,14 +365,52 @@
 	/* ------- END JAVA SCRIPT ---------- */
 	
 	/* ------------- NEW FETCH DATA ------------- */
+	/** Show all content filtered by default 
+	 * @param string $_id_member
+	 * @param offset = 0 [optional]
+	 * @return object html zhout content
+	 */
 	function get_feeds_zhout_by_id_member($_id_member,$_offset = 0)
 	{
 		//condition
-		/*if (type = 1) then get_product_update_source
-		 * if (type = 2) then get post zhout
-		 * if (type = 3) then get wishes product
-		 */
+		$_data_zhout = array();
+		$_zhout_content = '';
+		if($this->_IS_MOST_ACTIVE_AS_DEFAULT)
+		{
+			$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_most_active($_id_member,$_offset,$this->_LIMIT_ZHOUT);
+			
+		}
+		else
+		{
+			$_data_zhout = $this->CI->model_zhout->get_post_data_by_id_member_last_update($_id_member,$_offset,$this->_LIMIT_ZHOUT);
+		}
 		
+		if(count($_data_zhout))
+		{	
+			
+			foreach ($_data_zhout as $_value)
+			{
+				
+				switch ( intval($_value['id_type_zhout']))
+				{
+					//if (type = 1) then get_product_update_source
+					case 1 : $_zhout_content .= call_user_func(array($this,'get_wishes_product'),$_value['id_member'],$_value['id_stuff'],$_value['id_zhout'],$_value['id_stuff_source']);
+							break;
+					 // if (type = 2) then get post zhout
+					case 2 : $_zhout_content .= call_user_func(array($this,'get_post_zhout'),$_value['id_zhout']);
+							break;
+					// if (type = 3) then get wishes product
+					case 3 : $_zhout_content .= call_user_func(array($this,'get_wishes_product'),$_value['id_member'],$_value['id_stuff'],$_value['id_zhout'],$_value['id_stuff_source']);
+							break;
+					default : $_zhout_content .='No content Validation';
+							break;
+				}
+			}
+		
+		}
+		
+		return $_zhout_content;
+		 
 	}
 	/* ------------- END FETCH DATA ------------- */
 	
@@ -337,7 +420,7 @@
 	 * @param int $_id_zhout
 	 * @param int (enum type product) e.g 1 = zhop in zhopie, 2 = zhop in amazon, 3 = zhop in zappos
 	 * @return object html
-	 * Description : Only return view zhout posting
+	 * Description : Only return view update product posting
 	 */
 	
 	function get_product_update_source($_id_zhout,$_id_source,$_id_product)
@@ -372,26 +455,35 @@
 		}
 	}
 	
-	/**
+	/** Show zhout with single zhout posting
 	 * @param int $_id_zhout
 	 * @return object html
 	 * Description : Only return view zhout posting
 	 */
 	function get_post_zhout($_id_zhout)
 	{
+		$_data_zhout = $this->CI->model_zhout->get_zhout_by_id_zhout($_id_zhout);
+		//image must set with durectory helper;
+		$_image_profile = directory_map(getcwd().'/assets/zhopie/userfiles/'.$_data_zhout['id_member'].'/profile_picture');
 		
+		$_image_url['profil_picture_url'] = checkPicture($_out =((count($_image_profile)== 1)? base_url().'/assets/zhopie/userfiles/'.$_data_zhout['id_member'].'/profile_picture/'.$_image_profile[0] : 'NULL'));
+		$_data_inserted = array_merge($_data_zhout,$_image_url);
+		//set appropriate attribute
+		$_data_inserted['_comment_button'] = call_user_func(array($this,'get_attribute_by_type'),'comment_status',$_data_zhout['id_member'],FALSE,$_data_zhout['id_zhout'],array(),NULL);
+		return $this->CI->load->view('zhout/zhout_post_single',$_data_inserted,TRUE);
 	}
-	/**
+	/** show zhout with single wish product posting
 	 * @param int $_id_product
 	 * @return object html
 	 * Description : Only return wishes product
 	 */
-	function get_wishes_product($_id_member,$_id_product,$_id_zhout)
+	function get_wishes_product($_id_member,$_id_product,$_id_zhout,$_id_product_source)
 	{
-		
+		$_data_product =$this->get_detail_product_by_id_source_id_product($_id_product_source,$_id_product);
+		return $this->CI->load->view('zhout/wishlist_product_single',$_data_product,TRUE);
 	}
 	
-	/*------------- ZHOUT CONTENT CONDITION -------*/
+	/*------------- END ZHOUT CONTENT CONDITION -------*/
 	
 	/*------------------ GET ZHOUT ATTRIBUTE ----------------*/
 	/*---(E.g 'wishes product','addthis button','comment')---*/
@@ -406,9 +498,9 @@
 	{
 		switch($_type)
 		{
-			case 'wishes_product' : $_wishes_product = $this->model_zhout->get_wishes_product_by_id_product($_id_product);
+			case 'wishes_product' : $_wishes_product = $this->CI->model_zhout->get_wishes_product_by_id_product($_id_product);
 									//Must relate with model wishlist return must an integer
-									$_wishlist_already_added = $this->model_product->is_added_stuff($_id_product,$_id_member);
+									$_wishlist_already_added = $this->CI->model_product->is_added_stuff($_id_product,$_id_member);
 									$_wishlist_html ='';
 									$_wishlist_html ='<a href="javascript:void(0);"'.((!$_wishlist_already_added)?'onClick ="addWishlist(this)"' :'').'"
 													   id="'.$_id_product.' id_source="'.$_id_source.'">';
@@ -432,44 +524,61 @@
 									</div>';
 			                     
 									break;
-			case 'comment_view'		  : $_data_comment =$this->model_zhout->get_comment_by_id_zhout($_id_zhout);
+			case 'comment_view'		  : $_data_comment =$this->CI->model_zhout->get_comment_by_id_zhout($_id_zhout);
 									if(count($_data_comment))
 									{
 										$_data_view_comment = array();
 										if(count($_data_comment)> 2)
 										{
-											$_data_comment =$this->model_zhout->get_comment_by_id_zhout($_id_zhout,0,2);
+											$_data_comment =$this->CI->model_zhout->get_comment_by_id_zhout($_id_zhout,0,2);
 											$_data_view_comment['_show_all_comment'] = TRUE;
 											$_data_view_comment['_data_comment'] = $_data_comment;
-											return $this->load->view('zhout/comment_view',$_data_view_comment,TRUE);
+											$_data_view_comment['_show_comment_input'] = TRUE;
+											$_data_view_comment['_id_zhout'] =$_id_zhout;
+											$_data_view_comment['_comment_text'] =call_user_func($this->_INPUT_DATA['comment_text']['type'],$this->_INPUT_DATA['comment_text']['value']);
+										
+											return $this->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);
 										}
 										else if(count($_data_comment)> 0 && count($_data_comment)<=2)
 										{
 											$_data_view_comment['_show_all_comment'] = FALSE;
 											$_data_view_comment['_data_comment'] = $_data_comment;
-											return $this->load->view('zhout/comment_view',$_data_view_comment,TRUE);
+											$_data_view_comment['_show_comment_input'] = TRUE;
+											$_data_view_comment['_id_zhout'] =$_id_zhout;
+											$_data_view_comment['_comment_text'] =call_user_func($this->_INPUT_DATA['comment_text']['type'],$this->_INPUT_DATA['comment_text']['value']);
+											return $this->CI->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);
 										}
 								
 									}
+									else
+									{
+										$_data_view_comment['_show_all_comment'] = FALSE;
+										$_data_view_comment['_data_comment'] = $_data_comment;
+										$_data_view_comment['_show_comment_input'] = TRUE;
+										$_data_view_comment['_id_zhout'] =$_id_zhout;
+										$_data_view_comment['_comment_text'] =call_user_func($this->_INPUT_DATA['comment_text']['type'],$this->_INPUT_DATA['comment_text']['value']);
+										
+										return $this->CI->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);		
+									}
 									return FALSE;	
 									break;
-			case 'comment_status'	 : $_count_comment = $this->model_zhout->get_comment_by_id_zhout($_id_zhout);
+			case 'comment_status'	 : $_count_comment = $this->CI->model_zhout->get_comment_by_id_zhout($_id_zhout);
 									   $_status_comment ='<a href ="javascript:void(0)" id="comment_status-'.$_id_zhout.'" onClick="commentStatus(this);" >';
 									   if(count($_count_comment))
 									   {
-									   	$_status_comment .= 'COMMENT('.$_count_comment.')';	
+									   	$_status_comment .= 'COMMENT('.count($_count_comment).')';	
 									   }
 									   else
 									   {
-									   	$_status_comment .= 'COMMENT('.$_count_comment.')';
+									   	$_status_comment .= 'COMMENT('.count($_count_comment).')';
 									   }
 									   $_status_comment .= '</a>';
 									   
 									   return $_status_comment; 
 									break;
-		  case 'more_comments'		: $_data_comment =$this->model_zhout->get_comment_by_id_zhout($_id_zhout,2);
+		  case 'more_comments'		: $_data_comment =$this->CI->model_zhout->get_comment_by_id_zhout($_id_zhout,2);
 		  							  $_data_view_comment['_show_all_comment'] = FALSE;
-									  return $this->load->view('zhout/comment_view',$_data_view_comment,TRUE);
+									  return $this->CI->load->view('zhout/comment_view',$_data_view_comment,TRUE);
 									  
 		  								
 		}
@@ -485,7 +594,8 @@
 	function get_zhout_content_by_id_member($_id_member)
 	{
 		$_data = array();
-		$_data_category = $this->CI->model_zhout->get_category_zhout($_id_member);
+		//$_data_category = $this->CI->model_zhout->get_category_zhout($_id_member);
+		$_data_category = array();
 		$_dropdown_value = array();
 		if(count($_data_category)== 0)
 		{
@@ -528,7 +638,9 @@
 	{
 		switch ($_id_source)
 		{
-			case 1 : return  $this->CI->model_product->get_detail_product($_id_product);
+			case 1 :  $_product_on_zhopie = $this->CI->model_product->get_detail_product($_id_product);
+					  $_product_on_zhopie = array_shift($_product_on_zhopie->result_array());
+						return $_product_on_zhopie;
 					break ;
 			case 2 : return  $this->CI->model_amazon->get_product_amazon_by_id($_id_product); 
 					break;
@@ -547,10 +659,16 @@
 		{
 			//data zhout must be validate to prevent xss 
 			//locate checkValues
-			$_data_inserted = $this->CI->model_zhout->add_zhout(array('zhout_content'=>$_data_zhout,'userip'=>$_SERVER['REMOTE_ADDR'],'id_member'=>$_id_member,'date'=>strtotime(date("Y-m-d H:i:s"))));
-			$_image_url['profil_picture_url'] = checkPicture('null');
-			$_data_inserted = array_merge($_data_inserted,$_image_url);
-			return $this->CI->load->view('zhout/zhout_post_single',$_data_inserted,TRUE);
+			$_data_inserted = $this->CI->model_zhout->add_zhout(array('zhout_content'=>$_data_zhout,'userip'=>$_SERVER['REMOTE_ADDR'],'id_member'=>$_id_member,'date'=>strtotime(date("Y-m-d H:i:s")),'id_type_zhout'=>2));
+			return call_user_func(array($this,'get_post_zhout'),$_data_inserted['id_zhout'] );	
+		}
+		
+		function add_comment($_id_zhout,$_comment_content,$_id_member)
+		{
+			//data comment zhout must be validate to prevent xss 
+			//locate checkValues
+			$_data_comment = $this->CI->model_zhout->add_comment();
+			
 		}
 		
 		//End Type Post
@@ -610,6 +728,11 @@
 		function most_active ($_id_member)
 		{
 			
+		}
+		
+		function update_attribute_time($_id_zhout)
+		{
+			$this->model_zhout->update_attribute_time($_id_zhout);
 		}
 	
 	/* ------------- END ZHOUT AJAX ACTION AND RESPONSE -------------- */
@@ -714,4 +837,4 @@
 	
 	/* --------------- END OLD FUNCTION ------------------- */
 }
-?> 
+?>

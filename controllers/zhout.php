@@ -20,7 +20,14 @@
 			$this->load->helper('friends/friends');
 			$this->load->helper('product/mywishlist');
 			$this->load->helper('shop/myshop');
+			$this->load->helper('zhout/validasi_comment');
+			
+			/*library*/
 			$this->load->library('site/bep_site');
+			
+			
+			/*Model*/
+			$this->load->model('product/model_product');
 		} 
 		
 		function index()
@@ -48,6 +55,24 @@
 			$this->zappos_lib->add();
 		}
 		
-		
+		function insert_comment()
+		{
+			$id_zhout 		= $this->uri->segment(3);
+			$write_comment 	= checkValues(urldecode($this->uri->segment(4)));
+			$date 			= strtotime(date("Y-m-d H:i:s"));
+			if($write_comment =='')
+				$write_comment ='/';
+			
+			$data = array(
+				'id_member'			=> $this->session->userdata('id_member'),
+				'id_zhout'			=> $id_zhout,
+				'comment_content'	=> $write_comment,
+				'userip'			=> '',
+				'date'				=> $date,
+				'active'			=> 1
+			);
+			
+			$this->model_product->insert_comment($data);
+		}
    }
 ?>

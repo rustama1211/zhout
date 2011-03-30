@@ -7,13 +7,10 @@
 		}
 		
 	/* ------ NEW MODEL FUNCTION ----*/
-	function get_id_friends($id_member)
-	{
-	$data =$this->db->query("SELECT id_member FROM tb_zhopie_friends WHERE id_member_friend='".$id_member."' and status=2 UNION
-    SELECT id_member_friend FROM tb_zhopie_friends WHERE id_member='".$id_member."' and status=2;");
-    return $data->result_array();
-	}
-	
+	/** Get Category zhout
+	 * @param string $_id_member
+	 * @return array data category
+	 */
 	function get_category_zhout($_id_member)
 	{
 		$this->db->select('*');
@@ -21,7 +18,10 @@
 		$_data_category =$this->db->get('tb_category_zhout');
 		return $_data_category->result_array();
 	}
-	
+	/** Get count of wishes product by id product
+	 * @param string $_id_product
+	 * @return bolean/data
+	 */
 	function get_wishes_product_by_id_product($_id_product)
 	{
 		$this->db->select('*');
@@ -39,6 +39,102 @@
 		}
 	}
 	
+	
+	/** Update attribute zhout to get most active comparison with the newest one
+	 * @param int $id_zhout
+	 * @return void
+	 */
+	function update_attribute_time($_id_zhout)
+	{
+		$this->db->where('id_zhout',$_id_zhout);
+		$this->db->update('tb_zhopie_zhout',array('attr_time'=>strtotime(date("d M Y H:i:s"))));
+	}
+	//------------ FRIENDS ZHOUT RELATION -------------------//
+	/** Insert Friends
+	 * @param int $id_zhout
+	 * @param array $id_member
+	 * @return void
+	 */
+	function insert_friends_id ($id_zhout,$id_friends)
+	{
+		 if(is_array($id_friends))
+		 {
+			  foreach ($id_friends as $index=> $value)
+			  {
+				$this->db->set('id_zhout',$id_zhout);
+				$this->db->set('id_member_and_friends', $value['id_member']);
+				$this->db->insert('tb_relation_zhout');
+			  }
+		 }
+	}
+	
+	/** Get Id Friends
+	 * @param string $id_member
+	 * @return array id_friends
+	 */
+	function get_id_friends($id_member)
+	{
+	$data =$this->db->query("SELECT id_member FROM tb_zhopie_friends WHERE id_member_friend='".$id_member."' and status=2 UNION
+    SELECT id_member_friend FROM tb_zhopie_friends WHERE id_member='".$id_member."' and status=2;");
+    return $data->result_array();
+	}
+	//------------ END FRIENDS ZHOUT RELATION -------------------//
+	
+	
+	//------------ FILTER ZHOUT BY MOST ACTIVE OR LAST UPDATE ------------//
+	
+	/** get zhout data by most active clicked
+	 * @param string $_id_member
+	 * @param int offset
+	 * @param int limit
+	 * @return array data zhout
+	 */
+	function get_post_data_by_id_member_most_active($_id_member,$_offset = 0, $_LIMIT = 10)
+	{
+		//$_data_id_friends_and_me = $this->get_id_friends($_id_member);
+		$_friends_and_me = $this->get_id_friends($_id_member);
+		$_friends_and_me[] = array('id_member'=>$_id_member);
+		$text = "SELECT DISTINCT * from tb_zhopie_zhout JOIN tb_relation_zhout ON tb_zhopie_zhout.id_zhout = tb_relation_zhout.id_zhout  WHERE ";
+		//LEFT JOIN tb_follow on tb_follow.id_shop = tb_zhopie_zhout.id_shop // tb_follow.id_member = '004'
+		$inc = 0;
+		$add_text ="";
+		foreach($_friends_and_me as $value)
+		{
+			if(!is_array($value))
+			{
+			$add_text .=  "tb_zhopie_zhout.id_member = '".$value."'";
+			}
+			else
+			{
+				if($inc == 0)
+				{
+					$add_text .=  "tb_zhopie_zhout.id_member = '".$value['id_member']."'";
+				}
+				else if($inc < count($_friends_and_me)-1)
+				{
+					$add_text .= " or tb_zhopie_zhout.id_member ='".$value['id_member']."'";
+				}
+				else
+				{
+					$add_text .= " or tb_zhopie_zhout.id_member ='".$value['id_member']."'" ;
+				}
+				
+		
+		    }
+		$inc ++;
+		}
+		
+		$text .= $add_text." group by tb_zhopie_zhout.id_zhout  order by tb_zhopie_zhout.id_zhout desc limit ".$_offset.",".$_LIMIT."";
+
+			$result = $this->db->query($text);
+			
+			return $result->result_array();
+		
+	}
+	
+	
+	
+	//------------ END FILTER ZHOUT BY MOST ACTIVE OR LAST UPDATE
 	function get_post_data_by_id_member($_id_member)
 	{
 		$_friends_and_me = $this->get_id_friends($_id_member);
@@ -106,11 +202,16 @@
 		return $result->result_array();
 	}
 	
+	//----------------- ZHOUT MODEL ADD/DELETE ---------------------//
 	function add_zhout($_data_zhout = array())
 	{
 		$this->db->insert('tb_zhopie_zhout',$_data_zhout);
 		$_last_insert = $this->db->insert_id();
+		$_friends_and_me = $this->get_id_friends($_data_zhout['id_member']);
+		$_friends_and_me[] = array('id_member'=>$_data_zhout['id_member']);
+		$this->insert_friends_id($_last_insert,$_friends_and_me);
 		return $this->get_zhout_by_id_zhout($_last_insert);
+		
 		
 	}
 	
@@ -125,7 +226,25 @@
 		return array_shift($_data->result_array());
 	}
 	
+	//----------------- END ZHOUT MODEL ADD/DELETE ---------------------//
 	
+	//----------------- COMMENT MODEL ADD/DELETE ---------------------//
+	function add_comment($_data_comment=array())
+	{
+		$this->db->insert('tb_zhout_comment',$_data_comment);
+		$_id_comment = $this->db->insert_id();
+		return $this->get_comment_by_id_comment($_id_comment);
+	}
+	
+	function get_comment_by_id_comment($_id_comment)
+	{
+		$this->db->select('*');
+		$this->db->from('tb_zhout_comment');
+		$this->db->join('tb_zhopie_profile','tb_zhout_comment.id_member=tb_zhopie_profile.id_member');
+		$this->db->where('tb_zhout_comment.id_comment',$_id_comment);
+		$_data = $this->db->get();
+		return array_shift($_data->result_array());
+	}
 	
 	
 	/*----- END NEW MODEL FUNCTIOn ---*/
@@ -622,18 +741,7 @@ function get_post_id_by_you_and_friends_show_more_post($user_id,$offset)
 		$this->insert_friends_id($last_id,$all_data);*/
 	}
 	
-	function insert_friends_id ($id_zhout,$id_member)
-	{
-		 if(is_array($id_member))
-		 {
-			  foreach ($id_member as $index=> $value)
-			  {
-				$this->db->set('id_zhout',$id_zhout);
-				$this->db->set('id_member_and_friends', $value['id_member']);
-				$this->db->insert('tb_relation_zhout');
-			  }
-		 }
-	}
+	
 	
 	// ------------------------------------------------------------- QUERY BARU ------------------------------------------------------------------------------ //
 	
@@ -823,7 +931,20 @@ function get_post_id_by_you_and_friends_show_more_post($user_id,$offset)
 	return $result;
   }
 		
-		
-	
+
+		/* ------------- Recent Activity (NV) ---------------*/
+	function recent_activity()
+	{
+		$result = $this->db->query("select distinct a.id_stuff as barang, e.id_member, a.zhout_content, a.id_shop as wishlist, 
+									d.id_shop as zhopie_shop, b.first_name, b.last_name, c.name_stuff, a.id_member as zhout_member
+									from tb_zhopie_zhout as a
+									left join tb_zhopie_profile as b on a.id_member = b.id_member 
+									left join tb_stuff as c on a.id_stuff = c.id_stuff 
+									left join tb_relation_category as d on c.id_stuff = d.id_stuff
+									left join tb_zhopie_shop as e on d.id_shop = e.id_shop 
+									order by rand() limit 20;");
+		return $result;
+	}
+		/* ------------- End Recent Activity (NV) ---------------*/	
    }
 ?>

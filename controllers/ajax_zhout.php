@@ -28,7 +28,7 @@
 				
 				
 			}
-			echo "gdf";
+
 		}
 		
 		function add_comment()
@@ -36,11 +36,21 @@
 			
 		}
 		
+		function add_attribute_time()
+		{
+			$_id_zhout = $this->input->post('id_zhout');
+			if($_id_zhout)
+			{
+				$this->zhout_lib->update_attribute_time($_id_zhout);
+			}
+		}
+		
 		// End Type input is POST
 		
 		function get_dropdown_comment($_id_zhout)
 		{
-			
+			echo $this->zhout_lib->get_dropdown_comment($_id_zhout).
+			'<script type ="text/javascript">'.$this->zhout_lib->text_area_javascript().'</script>';
 		}
 		
 		function show_more_comment($_id_zhout)
