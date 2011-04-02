@@ -13,10 +13,23 @@
 	 */
 	function get_category_zhout($_id_member)
 	{
-		$this->db->select('*');
+		$this->db->select('id_category');
+		$this->db->from ('tb_zhopie_profile');
 		$this->db->where('id_member',$_id_member);
-		$_data_category =$this->db->get('tb_category_zhout');
-		return $_data_category->result_array();
+		$_id_category = $this->db->get();
+		$_id_category = array_shift($_id_category->result_array());
+		$_id_category = $_id_category['id_category'];
+		$_id_category = explode(',',$_id_category);
+		$_dropdown_value = array();
+		foreach ($_id_category as $_value)
+		{
+			$this->db->select('name_category');
+			$this->db->where('id_category',$_value);
+			$_name_category =$this->db->get('tb_category');
+			$_name_category = array_shift($_name_category->result_array());
+			$_dropdown_value[$_value] = $_name_category['name_category'];
+		}
+		return $_dropdown_value;
 	}
 	/** Get count of wishes product by id product
 	 * @param string $_id_product
@@ -89,45 +102,140 @@
 	 * @param int limit
 	 * @return array data zhout
 	 */
-	function get_post_data_by_id_member_most_active($_id_member,$_offset = 0, $_LIMIT = 10)
+	function get_post_data_by_id_member_last_update($_id_member,$_offset = 0, $_LIMIT = 10,$_CATEGORY= FALSE,$_FRIEND =FALSE)
 	{
-		//$_data_id_friends_and_me = $this->get_id_friends($_id_member);
-		$_friends_and_me = $this->get_id_friends($_id_member);
-		$_friends_and_me[] = array('id_member'=>$_id_member);
-		$text = "SELECT DISTINCT * from tb_zhopie_zhout JOIN tb_relation_zhout ON tb_zhopie_zhout.id_zhout = tb_relation_zhout.id_zhout  WHERE ";
-		//LEFT JOIN tb_follow on tb_follow.id_shop = tb_zhopie_zhout.id_shop // tb_follow.id_member = '004'
-		$inc = 0;
-		$add_text ="";
-		foreach($_friends_and_me as $value)
-		{
-			if(!is_array($value))
+		
+			
+			$_friends_and_me = $this->get_id_friends($_id_member);
+	
+			$_friends_and_me[] = array('id_member'=>$_id_member);
+			$_extern_value = array();
+			foreach ($_friends_and_me as $_value_member)
 			{
-			$add_text .=  "tb_zhopie_zhout.id_member = '".$value."'";
+				$_extern_value[] = $_value_member['id_member'];
+			}
+			
+			$_string_id_members = implode(',',$_extern_value);
+			$text = "SELECT DISTINCT * from tb_zhopie_zhout JOIN tb_relation_zhout ON tb_zhopie_zhout.id_zhout = tb_relation_zhout.id_zhout  WHERE tb_zhopie_zhout.id_member IN ";
+			$text .= "(".$_string_id_members.")";
+			if ($_CATEGORY)
+			{
+				$text .= " group by tb_zhopie_zhout.id_zhout  order by " ;
+				$text .= "CASE ";
+				//GET CATEGORY ID
+				$this->db->select('id_category');
+				$this->db->where('active',1);
+				$_data_category =$this->db->get('tb_category');
+				$_data_category = $_data_category->result_array();
+				$_tmp_category = array();
+				foreach ($_data_category as $_value)
+				{
+					$_tmp_category[] = $_value['id_category'];
+				}
+					$_key_to_remove = array_search($_CATEGORY,$_tmp_category);
+					
+					if($_key_to_remove !== FALSE)
+					{
+						unset($_tmp_category[$_key_to_remove]);
+					}
+					
+					//add to priority
+					$_priority_case = array_merge(array('0'=>$_CATEGORY),$_tmp_category);
+				$_inc = 1;
+				foreach ($_priority_case as $_value)
+				{
+					$text.= "WHEN tb_zhopie_zhout.id_category = ".$_value." THEN ".$_inc." ";	
+					$_inc ++;
+				}
+				$text.= " WHEN tb_zhopie_zhout.id_category = 0 THEN ".$_inc."  END , tb_zhopie_zhout.id_zhout desc limit ".$_offset.",".$_LIMIT."";
+						
+			}
+			else if ($_FRIEND)
+			{
+				$text .= " group by tb_zhopie_zhout.id_zhout  order by " ;
+				$text .= "CASE ";
+				$text .= "WHEN tb_zhopie_zhout.id_member !=".$_id_member." THEN 1 
+						  ELSE 2 END , tb_zhopie_zhout.id_zhout desc limit ".$_offset.",".$_LIMIT." ";
 			}
 			else
 			{
-				if($inc == 0)
-				{
-					$add_text .=  "tb_zhopie_zhout.id_member = '".$value['id_member']."'";
-				}
-				else if($inc < count($_friends_and_me)-1)
-				{
-					$add_text .= " or tb_zhopie_zhout.id_member ='".$value['id_member']."'";
-				}
-				else
-				{
-					$add_text .= " or tb_zhopie_zhout.id_member ='".$value['id_member']."'" ;
-				}
-				
+				$text .=" group by tb_zhopie_zhout.id_zhout  order by tb_zhopie_zhout.id_zhout desc limit ".$_offset.",".$_LIMIT."";
+			}
 		
-		    }
-		$inc ++;
-		}
-		
-		$text .= $add_text." group by tb_zhopie_zhout.id_zhout  order by tb_zhopie_zhout.id_zhout desc limit ".$_offset.",".$_LIMIT."";
-
+	
 			$result = $this->db->query($text);
+			return $result->result_array();
+		
+	}
+	
+	/** get zhout data by most active clicked
+	 * @param string $_id_member
+	 * @param int offset
+	 * @param int limit
+	 * @return array data zhout
+	 */
+	function get_post_data_by_id_member_most_active($_id_member,$_offset = 0, $_LIMIT = 10,$_CATEGORY= FALSE,$_FRIEND =FALSE)
+	{
+		
 			
+			$_friends_and_me = $this->get_id_friends($_id_member);
+	
+			$_friends_and_me[] = array('id_member'=>$_id_member);
+			$_extern_value = array();
+			foreach ($_friends_and_me as $_value_member)
+			{
+				$_extern_value[] = $_value_member['id_member'];
+			}
+			
+			$_string_id_members = implode(',',$_extern_value);
+			$text = "SELECT DISTINCT * from tb_zhopie_zhout JOIN tb_relation_zhout ON tb_zhopie_zhout.id_zhout = tb_relation_zhout.id_zhout  WHERE tb_zhopie_zhout.id_member IN ";
+			$text .= "(".$_string_id_members.")";
+			if ($_CATEGORY)
+			{
+				$text .= " group by tb_zhopie_zhout.id_zhout  order by " ;
+				$text .= "CASE ";
+				//GET CATEGORY ID
+				$this->db->select('id_category');
+				$this->db->where('active',1);
+				$_data_category =$this->db->get('tb_category');
+				$_data_category = $_data_category->result_array();
+				$_tmp_category = array();
+				foreach ($_data_category as $_value)
+				{
+					$_tmp_category[] = $_value['id_category'];
+				}
+					$_key_to_remove = array_search($_CATEGORY,$_tmp_category);
+					
+					if($_key_to_remove !== FALSE)
+					{
+						unset($_tmp_category[$_key_to_remove]);
+					}
+					
+					//add to priority
+					$_priority_case = array_merge(array('0'=>$_CATEGORY),$_tmp_category);
+				$_inc = 1;
+				foreach ($_priority_case as $_value)
+				{
+					$text.= "WHEN tb_zhopie_zhout.id_category = ".$_value." THEN ".$_inc." ";	
+					$_inc ++;
+				}
+				$text.= " WHEN tb_zhopie_zhout.id_category = 0 THEN ".$_inc."  END , tb_zhopie_zhout.attr_time desc limit ".$_offset.",".$_LIMIT."";
+						
+			}
+			else if ($_FRIEND)
+			{
+				$text .= " group by tb_zhopie_zhout.id_zhout  order by " ;
+				$text .= "CASE ";
+				$text .= "WHEN tb_zhopie_zhout.id_member !=".$_id_member." THEN 1 
+						  ELSE 2 END , tb_zhopie_zhout.attr_time desc limit ".$_offset.",".$_LIMIT." ";
+			}
+			else
+			{
+				$text .=" group by tb_zhopie_zhout.id_zhout  order by tb_zhopie_zhout.attr_time desc limit ".$_offset.",".$_LIMIT."";
+			}
+		
+	
+			$result = $this->db->query($text);
 			return $result->result_array();
 		
 	}
@@ -184,21 +292,37 @@
 		return (count($data))? $data['total_count'] : 0 ;
 	}
 	
-	function get_comment_by_id_zhout($_id_zhout,$_offset = 0 , $_limit = FALSE)
+	function get_comment_by_id_zhout($_id_zhout,$_offset = 0 , $_limit = FALSE, $_get_from_last = FALSE)
 	{
 		//$this->db->query("SELECT *,UNIX_TIMESTAMP() - date AS CommentTimeSpent where  id_zhout = '".$p_id."' order by id_comment asc;");//
 		$_count_all = $this->count_total_comment_by_id_zhout($_id_zhout);
 		$this->db->select('*,UNIX_TIMESTAMP() - date AS CommentTimeSpent');
-		$this->db->where('id_zhout',$_id_zhout);
+		$this->db->from('tb_zhout_comment');
+		$this->db->join('tb_zhopie_profile','tb_zhout_comment.id_member=tb_zhopie_profile.id_member');
+		$this->db->where('tb_zhout_comment.id_zhout',$_id_zhout);
 		if($_limit)
 		{
+			if(  $_get_from_last )
+			{
+				$this->db->limit($_limit,$_count_all-$_limit);
+			}
+			else
+			{
 			$this->db->limit($_limit,$_offset);
+			}
 		}else
 		{
-			//for showing first comment with 2 row record only, offset must set to 2;
+			//for showing after first comment with 2 row have showed, offset must set to 2;
+			if(  $_get_from_last )
+			{
+				$this->db->limit($_count_all-2,0);
+			}
+			else
+			{
 			$this->db->limit($_count_all,$_offset);
+			}
 		}
-		$result = $this->db->get('tb_zhout_comment');
+		$result = $this->db->get();
 		return $result->result_array();
 	}
 	
@@ -229,16 +353,21 @@
 	//----------------- END ZHOUT MODEL ADD/DELETE ---------------------//
 	
 	//----------------- COMMENT MODEL ADD/DELETE ---------------------//
-	function add_comment($_data_comment=array())
+	function add_comment($_data_comment=array(),$_comment_length=FALSE)
 	{
 		$this->db->insert('tb_zhout_comment',$_data_comment);
 		$_id_comment = $this->db->insert_id();
+		//default comment length must greater then 2
+		if ($_comment_length)
+		{
+		 	return	$this->get_comment_by_id_zhout($_data_comment['id_zhout'],$_comment_length);
+		}
 		return $this->get_comment_by_id_comment($_id_comment);
 	}
 	
 	function get_comment_by_id_comment($_id_comment)
 	{
-		$this->db->select('*');
+		$this->db->select('*,UNIX_TIMESTAMP() - date AS CommentTimeSpent');
 		$this->db->from('tb_zhout_comment');
 		$this->db->join('tb_zhopie_profile','tb_zhout_comment.id_member=tb_zhopie_profile.id_member');
 		$this->db->where('tb_zhout_comment.id_comment',$_id_comment);

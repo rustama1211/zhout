@@ -18,7 +18,7 @@
 				$_data_return_html = $this->zhout_lib->add_zhout($this->session->userdata('id_member'),$_data_zhout);
 				if($_id_member != $this->session->userdata('id_member'))
 				{	
-				//need to handling where the user will be directed ?
+				//need to handling where the user will be redirected ?
 					echo '0';		
 				}
 				else
@@ -33,6 +33,16 @@
 		
 		function add_comment()
 		{
+			$_id_zhout = $this->input->post('id_zhout');
+			$_comment_content = $this->input->post('comment_content');
+			$_id_member = $this->input->post('id_member');
+	
+			if ($_id_zhout && $_comment_content && $_id_member)
+			{
+				$_data_comment = $this->zhout_lib->add_comment($_id_zhout,$_comment_content,$_id_member = (($this->session->userdata('id_member')!= $_id_member)?$this->session->userdata('id_member'):$_id_member));
+				$this->zhout_lib->update_attribute_time($_id_zhout);
+				echo $_data_comment;		
+			}
 			
 		}
 		
@@ -55,12 +65,13 @@
 		
 		function show_more_comment($_id_zhout)
 		{
+			echo $this->zhout_lib->show_more_comment($_id_zhout);
 			
 		}
 		
 		function show_more_zhout($_id_member,$_current_active,$_offset)
 		{
-			
+			//echo $this->zhout_lib->show_more_zhout($_id_member,$_current_active,$_offset);
 		}
 		
 		function add_wishlist($_id_member,$_id_product)
@@ -78,20 +89,16 @@
 			
 		}
 		
-		function change_category($_id_zhout)
+		function change_category($_id_member,$_id_category,$_current_active)
 		{
-			
+			echo $this->zhout_lib->change_category($_id_member,$_id_category,$_current_active);
 		}
 		
-		function last_update($_id_member)
+		function current_active($_id_member,$_id_category,$_current_active)
 		{
-			
+			echo $this->zhout_lib->current_active($_id_member,$_id_category,$_current_active);
 		}
 		
-		function most_active ($_id_member)
-		{
-			
-		}
 		
 	}
 ?>

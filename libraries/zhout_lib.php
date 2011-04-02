@@ -11,6 +11,9 @@
 	public $_ZHOUT_PARAMETER = 'zhout_data';
 	//comment parameter
 	public $_COMMENT_PARAMETER = '';
+	//set all category
+	private $_ALL_CATEGORY = array('0'=>'All');
+	private $_FRIEND_CATEGORY = array('friend'=>'Friend'); 
 	
 	//Type of ajax is POST
 	private $_AJAX_URL_ADD_ZHOUT = 'zhout/ajax_zhout/add_zhout';
@@ -43,10 +46,8 @@
 	private $_AJAX_SORT_CATEGORY = 'zhout/ajax_zhout/change_category/';
 	
 	//sort last update 
-	private $_AJAX_SORT_LAST_UPDATE = 'zhout/ajax_zhout/last_update/';
+	private $_AJAX_SORT_CURRENT_ACTIVE = 'zhout/ajax_zhout/current_active/';
 	
-	//sort last update 
-	private $_AJAX_SORT_MOST_ACTIVE = 'zhout/ajax_zhout/most_active/';
 	
 	
 	//sort
@@ -54,6 +55,8 @@
 	
 	private $_DEFAULT_ZHOUT_POST = 'Write Your Wish';
 	private $_DEFAULT_ZHOUT_COMMENT = 'Write your comment';
+	//show comment from 2 newest comment
+	private $_DEFAULT_SHOW_COMMENT_FROM_LAST = TRUE;
 	private $_LIMIT_ZHOUT = 10;
 	
 	
@@ -63,10 +66,10 @@
 		$this->CI->load->model('zhout/model_zhout');
 		$this->_INPUT_DATA = array('zhout_text'=>array('type'=>'form_textarea','value'=> array('id'=>'watermark','name'=>'zhout','value'=>$this->_DEFAULT_ZHOUT_POST,'style'=>'resize:none;')),
 								   'button_zhout'=>array('value'=>'<a href="javascript:void(0);" id="shareButton"><div class="btn_zhout">Zhout</div></a>'),
-								   'category_filter'=>array('type'=>'form_dropdown','value'=>array('id'=>'category_filter','onChange'=>'changeCategory(this);'),'name'=>'category_filter'),
+								   'category_filter'=>array('type'=>'form_dropdown','value'=>'id ="category_filter" onChange="changeCategory(this);"','name'=>'category_filter'),
 								   'comment_text'=>array('type'=>'form_textarea','value'=> array('id'=>'comment','name'=>'comment_text','cols'=>'50','style'=>"height:5px;resize:none",'class'=>'comment','onkeypress'=>'return addComment(this,event);')),
-								   'most_active' => array('value'=>'<a href="javascript:void(0);" onClick="mostActive(this);" class="default_active '.$_out = (($this->_IS_MOST_ACTIVE_AS_DEFAULT)?'current_active':'').'" id="most_active" >Most Active</a>'),
-								   'last_update' => array('value'=>'<a href="javascript:void(0);" onClick="lastUpdate(this);" class="default_active '.$_out = ((!$this->_IS_MOST_ACTIVE_AS_DEFAULT)?'current_active':'').'"id="last_update" >Last Update</a>')
+								   'most_active' => array('value'=>'<a href="javascript:void(0);" onClick="currentActive(this);" class="default_active '.$_out = (($this->_IS_MOST_ACTIVE_AS_DEFAULT)?'current_active':'').'" id="most_active" >Most Active</a>'),
+								   'last_update' => array('value'=>'<a href="javascript:void(0);" onClick="currentActive(this);" class="default_active '.$_out = ((!$this->_IS_MOST_ACTIVE_AS_DEFAULT)?'current_active':'').'"id="last_update" >Last Update</a>')
 								  );
 		$this->CI->load->helper('zhout/add_this');	
 		
@@ -156,28 +159,44 @@
 	{
 		return 'function addComment(tag,e)
 				{	
-					var tmp_onclick =\'\';
+					
 					if(e.keyCode ==13)
 					{
-						if(tag.value !=\'\' && tag.value !=\''.$this->_DEFAULT_ZHOUT_COMMENT.'\' )
+						if(tag.value !=\'\' && tag.value !=\''.$this->_DEFAULT_ZHOUT_COMMENT.'\' && $(tag).attr(\'clicked\') != \'clicked\')
 						{
+							var comment_length = $(\'#wrap_comment-\'+$(tag).attr(\'ref\')).find(\'.people_comment\').length;
 							$.ajax({url : \''.site_url().'/'.$this->_AJAX_URL_ADD_COMMENT.'\',
-									data : {comment_content :tag.value , id_member:id_member},
+									data : {comment_content :tag.value , id_member:id_member, id_zhout : $(tag).attr(\'ref\')},
 									type : \'POST\',
 									beforeSend : function()
 												{
-													tmp_onclick = $(tag).attr(\'keypress\');
-													$(tag).removeAttr(\'keypress\');
+													$(tag).attr(\'clicked\',\'clicked\');
 												},
 									success		: function(response)
 												{
-													var comment_length = $(\'#wrap_comment-\'+tag.id).find(\'people_comment\');
-												$(\'#wrap_comment-\'+tag.id).find(\'people_comment\').eq(comment_length-1).append($(response));
-												$(tag).attr(\'onclick\',tmp_onclick);
+													//alert($(\'#wrap_comment-\'+$(tag).attr(\'ref\')).length);
+													
+													if($(\'#wrap_comment-\'+$(tag).attr(\'ref\')).find(\'.people_comment\').length == 0)
+													{
+											
+														$(\'#wrap_comment-\'+$(tag).attr(\'ref\')).prepend($(response));
+													}
+													else
+													{
+														//alert($(\'#wrap_comment-\'+$(tag).attr(\'ref\')).find(\'.people_comment\').eq(comment_length-1));
+														//console.log(\'%o\',comment_length);
+														//console.log(\'%o\',$(\'#wrap_comment-\'+$(tag).attr(\'ref\')).find(\'.people_comment\').eq(2));
+														$(\'#wrap_comment-\'+$(tag).attr(\'ref\')).find(\'.people_comment\').eq(comment_length-1).append($(response));
+													}
+												var  current_count_comment = $(\'#comment_status-\'+$(tag).attr(\'ref\')).html();	
+												current_count_comment = current_count_comment.substring(current_count_comment.indexOf(\'(\')+1,current_count_comment.indexOf(\')\'));
+												$(\'#comment_status-\'+$(tag).attr(\'ref\')).html(\'COMMENT(\'+(parseInt(current_count_comment)+1)+\')\');
+												$(tag).val(\'\').blur();
+												$(tag).removeAttr(\'clicked\',\'clicked\');
 												},
 									error		: function (response)
 												{
-													$(tag).attr(\'onclick\',tmp_onclick);
+													$(tag).removeAttr(\'clicked\',\'clicked\');
 												}
 								   });
 						}
@@ -187,23 +206,23 @@
 				}
 		';
 	}
-	function last_update_javascript()
+	function current_active_javascript()
 	{
-		return 'function lastUpdate(tag)
+		return 'function currentActive(tag)
 				{
-					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_LAST_UPDATE.'\'+id_member,
-							 dataType   : \'json\',
+					
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CURRENT_ACTIVE.'\'+id_member+\'/\'+$(\'#category_filter\').val()+\'/\'+tag.id,
 							 beforeSend : function()
 							 			{
 							 	
 							 			},
 							success : function(response)
 										{
-											
+										$(\'#wrap_zhout\').html($(response));
 										}
 						
 						
-					});*/
+					});
 					
 					$(\'.default_active\').removeClass(\'current_active\');
 					$(tag).addClass(\'current_active\');
@@ -211,28 +230,6 @@
 				}';
 	}
 	
-	function most_active_javascript()
-	{
-		return 'function mostActive(tag)
-				{
-					/*$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_MOST_ACTIVE.'\'+id_member,
-							 dataType   : \'json\',
-							 beforeSend : function()
-							 			{
-							 	
-							 			},
-							success : function(response)
-										{
-											
-										}
-						
-						
-					});*/
-					$(\'.default_active\').removeClass(\'current_active\');
-					$(tag).addClass(\'current_active\');
-					
-				}';
-	}
 	
 	function add_wishlist_javascript()
 	{
@@ -261,6 +258,7 @@
 	{
 		return 'function commentStatus(tag)
 			{
+				var tmp_onclick =\'\';
 				var attr_id = $(tag).attr(\'id\');
 				attr_id = attr_id.split(\'-\');
 				var found_comment_wrap = $(\'#wrap_comment-\'+attr_id[1]).length;
@@ -269,13 +267,16 @@
 					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_CLICK_COMMENT.'\'+attr_id[1],
 							 beforeSend : function()
 							 			{
-							 	
+							 				tmp_onclick = $(tag).attr(\'onclick\');
+											$(tag).removeAttr(\'onclick\');
 							 			},
 							success : function(response)
 										{
 											$(\'#zhout-\'+attr_id[1]).append($(response)).after(\'<div class="clear"></div>\');
-											
-										$(tag).removeAttr(\'onclick\');	
+										},
+							error   : function (response)
+										{
+											$(tag).attr(\'onclick\',tmp_onclick);
 										}
 						
 						
@@ -291,15 +292,16 @@
 	{
 		return 'function changeCategory(tag)
 				{
-					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+tag.value,
-							 dataType   : \'json\',
+					var id_current_active = $(\'.current_active\').attr(\'id\');
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+tag.value+\'/\'+id_current_active,
 							 beforeSend : function()
 							 			{
-							 	
+							 			 $(tag).attr(\'disabled\',\'disabled\');
 							 			},
 							success : function(response)
 										{
-										$(tag).removeAttr(\'onclick\');	
+											$(\'#wrap_zhout\').html($(response));
+										 $(tag).removeAttr(\'disabled\');
 										}
 						
 						
@@ -315,7 +317,7 @@
 					//Must get offset and current active e.g most_active / last_update
 					var offset = $(tag).attr(\'offset\');
 					var current_status = $(\'.current_active\').attr(\'id\');
-					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+current_status+\'/\'+offset,
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_SHOW_MORE_ZHOUT.'\'+id_member+\'/\'+current_status+\'/\'+offset,
 							 dataType   : \'json\',
 							 beforeSend : function()
 							 			{
@@ -338,8 +340,7 @@
 		return 'function showMoreComment(tag)
 				{
 					var tmp_onclick =\'\';
-					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_SORT_CATEGORY.'\'+id_member+\'/\'+tag.id,
-							 dataType   : \'json\',
+					$.ajax({ url : \''.site_url().'/'.$this->_AJAX_URL_SHOW_MORE_COMMENT.'\'+tag.id,
 							 beforeSend : function()
 							 			{
 							 				tmp_onclick = $(tag).attr(\'onclick\');
@@ -347,9 +348,9 @@
 							 			},
 							success : function(response)
 									   {
-										var comment_length = $(\'#wrap_comment-\'+tag.id).find(\'people_comment\');
-										$(\'#wrap_comment-\'+tag.id).find(\'people_comment\').eq(comment_length-1).append($(response));
-										$(tag).removeAttr(\'onclick\');	
+										var comment_length = $(\'#wrap_comment-\'+tag.id).find(\'.people_comment\');
+										'.$_out =(($this->_DEFAULT_SHOW_COMMENT_FROM_LAST)?'$(\'#wrap_comment-\'+tag.id).prepend($(response));':'$(\'#wrap_comment-\'+tag.id).find(\'people_comment\').eq(comment_length-1).append($(response));' ).'
+										$(tag).remove();
 									   },
 							error	:function(response)
 									   {
@@ -370,19 +371,85 @@
 	 * @param offset = 0 [optional]
 	 * @return object html zhout content
 	 */
-	function get_feeds_zhout_by_id_member($_id_member,$_offset = 0)
+	function get_feeds_zhout_by_id_member($_id_member,$_offset = 0,$_category = FALSE,$_ajax_request= FALSE)
 	{
 		//condition
 		$_data_zhout = array();
 		$_zhout_content = '';
-		if($this->_IS_MOST_ACTIVE_AS_DEFAULT)
+		
+		if (! $_ajax_request)
 		{
-			$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_most_active($_id_member,$_offset,$this->_LIMIT_ZHOUT);
-			
+			if($this->_IS_MOST_ACTIVE_AS_DEFAULT)
+			{
+				if($_category != FALSE && $_category != 'friend' && $_category != 0)
+				{
+					$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_most_active($_id_member,$_offset,$this->_LIMIT_ZHOUT,$_category);
+					
+				}
+				else if($_category == 'friend')
+				{
+					$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_most_active($_id_member,$_offset,$this->_LIMIT_ZHOUT,FALSE,TRUE);
+				}
+				else
+				{
+				$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_most_active($_id_member,$_offset,$this->_LIMIT_ZHOUT,FALSE);
+				}
+				
+			}
+			else
+			{	
+				if($_category != FALSE && $_category != 'friend' && $_category != 0)
+				{
+					$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_last_update($_id_member,$_offset,$this->_LIMIT_ZHOUT,$_category);
+					
+				}
+				else if($_category == 'friend')
+				{
+					$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_last_update($_id_member,$_offset,$this->_LIMIT_ZHOUT,FALSE,TRUE);
+				}
+				else
+				{
+				$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_last_update($_id_member,$_offset,$this->_LIMIT_ZHOUT,FALSE);
+				}
+			}
 		}
 		else
 		{
-			$_data_zhout = $this->CI->model_zhout->get_post_data_by_id_member_last_update($_id_member,$_offset,$this->_LIMIT_ZHOUT);
+			if($_ajax_request == 'most_active')
+			{
+				if($_category != FALSE && $_category != 'friend' && $_category != 0)
+				{
+					$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_most_active($_id_member,$_offset,$this->_LIMIT_ZHOUT,$_category);
+					
+				}
+				else if($_category == 'friend')
+				{
+					$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_most_active($_id_member,$_offset,$this->_LIMIT_ZHOUT,FALSE,TRUE);
+				}
+				else
+				{
+				$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_most_active($_id_member,$_offset,$this->_LIMIT_ZHOUT,FALSE);
+				}
+				
+			}
+			else
+			{
+				// Must update the value
+				if($_category != FALSE && $_category != 'friend' && $_category != 0)
+				{
+					$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_last_update($_id_member,$_offset,$this->_LIMIT_ZHOUT,$_category);
+					
+				}
+				else if($_category == 'friend')
+				{
+					$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_last_update($_id_member,$_offset,$this->_LIMIT_ZHOUT,FALSE,TRUE);
+				}
+				else
+				{
+				$_data_zhout =	$this->CI->model_zhout->get_post_data_by_id_member_last_update($_id_member,$_offset,$this->_LIMIT_ZHOUT,FALSE);
+				}
+			}
+			
 		}
 		
 		if(count($_data_zhout))
@@ -402,7 +469,7 @@
 					// if (type = 3) then get wishes product
 					case 3 : $_zhout_content .= call_user_func(array($this,'get_wishes_product'),$_value['id_member'],$_value['id_stuff'],$_value['id_zhout'],$_value['id_stuff_source']);
 							break;
-					default : $_zhout_content .='No content Validation';
+					default : $_zhout_content .='Cannot Find id_type_zhout on ID Zhout '.$_value['id_zhout'];
 							break;
 				}
 			}
@@ -463,7 +530,7 @@
 	function get_post_zhout($_id_zhout)
 	{
 		$_data_zhout = $this->CI->model_zhout->get_zhout_by_id_zhout($_id_zhout);
-		//image must set with durectory helper;
+		//image must set with directory helper;
 		$_image_profile = directory_map(getcwd().'/assets/zhopie/userfiles/'.$_data_zhout['id_member'].'/profile_picture');
 		
 		$_image_url['profil_picture_url'] = checkPicture($_out =((count($_image_profile)== 1)? base_url().'/assets/zhopie/userfiles/'.$_data_zhout['id_member'].'/profile_picture/'.$_image_profile[0] : 'NULL'));
@@ -530,22 +597,26 @@
 										$_data_view_comment = array();
 										if(count($_data_comment)> 2)
 										{
-											$_data_comment =$this->CI->model_zhout->get_comment_by_id_zhout($_id_zhout,0,2);
+											$_data_comment =$this->CI->model_zhout->get_comment_by_id_zhout($_id_zhout,0,2,$this->_DEFAULT_SHOW_COMMENT_FROM_LAST);
 											$_data_view_comment['_show_all_comment'] = TRUE;
 											$_data_view_comment['_data_comment'] = $_data_comment;
 											$_data_view_comment['_show_comment_input'] = TRUE;
 											$_data_view_comment['_id_zhout'] =$_id_zhout;
+											$this->_INPUT_DATA['comment_text']['value']['ref'] = $_id_zhout;
 											$_data_view_comment['_comment_text'] =call_user_func($this->_INPUT_DATA['comment_text']['type'],$this->_INPUT_DATA['comment_text']['value']);
-										
-											return $this->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);
+											$_data_view_comment['_for_single_ajax'] =FALSE;
+											return $this->CI->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);
 										}
 										else if(count($_data_comment)> 0 && count($_data_comment)<=2)
 										{
+											
 											$_data_view_comment['_show_all_comment'] = FALSE;
 											$_data_view_comment['_data_comment'] = $_data_comment;
 											$_data_view_comment['_show_comment_input'] = TRUE;
 											$_data_view_comment['_id_zhout'] =$_id_zhout;
+											$this->_INPUT_DATA['comment_text']['value']['ref'] = $_id_zhout;
 											$_data_view_comment['_comment_text'] =call_user_func($this->_INPUT_DATA['comment_text']['type'],$this->_INPUT_DATA['comment_text']['value']);
+											$_data_view_comment['_for_single_ajax'] =FALSE;
 											return $this->CI->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);
 										}
 								
@@ -556,8 +627,9 @@
 										$_data_view_comment['_data_comment'] = $_data_comment;
 										$_data_view_comment['_show_comment_input'] = TRUE;
 										$_data_view_comment['_id_zhout'] =$_id_zhout;
+										$this->_INPUT_DATA['comment_text']['value']['ref'] = $_id_zhout;
 										$_data_view_comment['_comment_text'] =call_user_func($this->_INPUT_DATA['comment_text']['type'],$this->_INPUT_DATA['comment_text']['value']);
-										
+										$_data_view_comment['_for_single_ajax'] =FALSE;
 										return $this->CI->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);		
 									}
 									return FALSE;	
@@ -576,9 +648,16 @@
 									   
 									   return $_status_comment; 
 									break;
-		  case 'more_comments'		: $_data_comment =$this->CI->model_zhout->get_comment_by_id_zhout($_id_zhout,2);
+		  case 'more_comments'		: $_data_comment =$this->CI->model_zhout->get_comment_by_id_zhout($_id_zhout,0,FALSE,$this->_DEFAULT_SHOW_COMMENT_FROM_LAST);
 		  							  $_data_view_comment['_show_all_comment'] = FALSE;
-									  return $this->CI->load->view('zhout/comment_view',$_data_view_comment,TRUE);
+									  $_data_view_comment['_data_comment'] = $_data_comment;
+									  $_data_view_comment['_show_comment_input'] = TRUE;
+									  $_data_view_comment['_id_zhout'] =$_id_zhout;
+									  $this->_INPUT_DATA['comment_text']['value']['ref'] = $_id_zhout;
+									  $_data_view_comment['_comment_text'] =call_user_func($this->_INPUT_DATA['comment_text']['type'],$this->_INPUT_DATA['comment_text']['value']);
+									  $_data_view_comment['_for_single_ajax'] =TRUE;
+						
+									  return $this->CI->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);
 									  
 		  								
 		}
@@ -594,26 +673,22 @@
 	function get_zhout_content_by_id_member($_id_member)
 	{
 		$_data = array();
-		//$_data_category = $this->CI->model_zhout->get_category_zhout($_id_member);
-		$_data_category = array();
-		$_dropdown_value = array();
-		if(count($_data_category)== 0)
+	    $_data_category = $this->CI->model_zhout->get_category_zhout($_id_member);	
+		if(count($_data_category)== 1 && $_data_category[0] == NULL )
 		{
-			unset($this->_INPUT_DATA['category_filter']);
+			$_data_category = $this->_ALL_CATEGORY + $this->_FRIEND_CATEGORY;
 		}
-		else
+		else if (count($_data_category)>=2)
 		{
-			
-			foreach ($_data_category as $_index =>$_value_category)
-			{
-				$_dropdown_value[$_index] = $_value_category;
-			}
+			$_data_category = $this->_ALL_CATEGORY + $_data_category  + $this->_FRIEND_CATEGORY;  
+		
 		}
+		
 		foreach($this->_INPUT_DATA as $_index =>$_value)
 		{
 			if(  isset($_value['type'])  && $_value['type'] == 'form_dropdown')
 			{
-				$_data[$_index] = call_user_func($_value['type'],$_value['name'],$_dropdown_value,$_value['value']);
+				$_data[$_index] = call_user_func($_value['type'],$_value['name'],$_data_category,'',$_value['value']);
 			}
 			else if (isset($_value['type']))
 			{
@@ -655,6 +730,11 @@
 	//get_attribute_by_type($_type,$_id_member=FALSE,$_id_product=FALSE,$_id_zhout=FALSE,$_data_product = array())
 	
 		//Type Is Post
+		/** function to add  zhout through ajax with callback of object html which have requested before
+		 * @param string $_id_member
+		 * @param string $_data_zhout
+		 * @return object html 
+		 */
 		function add_zhout($_id_member,$_data_zhout)
 		{
 			//data zhout must be validate to prevent xss 
@@ -663,31 +743,64 @@
 			return call_user_func(array($this,'get_post_zhout'),$_data_inserted['id_zhout'] );	
 		}
 		
+		/**function to add  comment through ajax with callback of object html which have requested before
+		 * @param string $_id_zhout
+		 * @param string $_comment_content
+		 * @param string $_id_member
+		 * @return object html
+		 */
 		function add_comment($_id_zhout,$_comment_content,$_id_member)
 		{
 			//data comment zhout must be validate to prevent xss 
 			//locate checkValues
-			$_data_comment = $this->CI->model_zhout->add_comment();
+			$_data_comment = $this->CI->model_zhout->add_comment(array('id_zhout'=>$_id_zhout,'comment_content'=>$_comment_content,'id_member'=>$_id_member,'date'=>strtotime(date('d M Y H:i:s'))));
+			$_data_view_comment['_show_all_comment'] = FALSE;
+			$_data_view_comment['_data_comment'] = $_data_comment;
+			$_data_view_comment['_show_comment_input'] = TRUE;
+			$_data_view_comment['_id_zhout'] =$_id_zhout;
+			$_data_view_comment['_for_single_ajax'] =TRUE;
+			$_data_view_comment['_comment_text'] =call_user_func($this->_INPUT_DATA['comment_text']['type'],$this->_INPUT_DATA['comment_text']['value']);
+			return $this->CI->load->view('zhout/zhout_comment_view',$_data_view_comment,TRUE);
 			
 		}
 		
 		//End Type Post
 	
+		/** get first comment view by clicking comment button and returned of object html comment view
+		 * @param int $_id_zhout
+		 * @return object html
+		 */
 		function get_dropdown_comment($_id_zhout)
 		{
 			return call_user_func(array($this,'get_attribute_by_type'),'comment_view',NULL,NULL,$_id_zhout,NULL,NULL);
 		}
 		
+		/** get more comment by clicking see all comment
+		 * @param object $_id_zhout
+		 * @return object html
+		 */
 		function show_more_comment($_id_zhout)
 		{
 			return call_user_func(array($this,'get_attribute_by_type'),'more_comments',NULL,NULL,$_id_zhout,NULL,NULL);
 		}
 		
+		/** get more zhout by clicking more zhout button
+		 * @param string $_id_member
+		 * @param string $_current_active
+		 * @param int $_offset
+		 * @return object html
+		 */
 		function show_more_zhout($_id_member,$_current_active,$_offset)
 		{
 			
 		}
 		
+		/** doing add wishlist by clicking wishlist button
+		 * @param string $_id_member
+		 * @param string $_id_product
+		 * @param int $_id_source
+		 * @return object html
+		 */
 		function add_wishlist($_id_member,$_id_product,$_id_source)
 		{
 			//must make a rule to get different product detail depend on id_source
@@ -704,7 +817,11 @@
 			}*/
 		}
 		
-		
+		/** to delete zhout (must validate if id_member have permission to delete zhout)
+		 * @param string $_id_member
+		 * @param string $_id_zhout
+		 * @return void
+		 */
 		function delete_zhout($_id_member,$_id_zhout)
 		{
 			
@@ -715,24 +832,22 @@
 			
 		}
 		
-		function change_category($_id_zhout)
+		function change_category($_id_member,$_id_category,$_current_active)
 		{
-			
+			 return call_user_func(array ($this,'get_feeds_zhout_by_id_member'),$_id_member,0,$_id_category,$_current_active);
 		}
 		
-		function last_update($_id_member)
+		
+		function current_active($_id_member,$_id_category,$_current_active)
 		{
-			
+			 return call_user_func(array ($this,'get_feeds_zhout_by_id_member'),$_id_member,0,$_id_category,$_current_active);
 		}
 		
-		function most_active ($_id_member)
-		{
-			
-		}
+		
 		
 		function update_attribute_time($_id_zhout)
 		{
-			$this->model_zhout->update_attribute_time($_id_zhout);
+			$this->CI->model_zhout->update_attribute_time($_id_zhout);
 		}
 	
 	/* ------------- END ZHOUT AJAX ACTION AND RESPONSE -------------- */
