@@ -556,7 +556,7 @@
 	/*---(E.g 'wishes product','addthis button','comment')---*/
 	/**
 	 * @type public function
-	 * @param string $_type  ('wishes_product','addthis_button','comment_view','comment_status','mode_comments')
+	 * @param string $_type  ('wishes_product','addthis_button','comment_view','comment_status','more_comments')
 	 * @param string $_id_product
 	 * @param int $_id_zhout 
 	 * @return object html
