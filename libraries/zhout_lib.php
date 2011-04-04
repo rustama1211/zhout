@@ -554,7 +554,7 @@
 				switch ( intval($_value['id_type_zhout']))
 				{
 					//if (type = 1) then get_product_update_source
-					case 1 : $_zhout_content .= call_user_func(array($this,'get_wishes_product'),$_value['id_member'],$_value['id_stuff'],$_value['id_zhout'],$_value['id_stuff_source']);
+					case 1 : $_data_zhout_html[] = call_user_func(array($this,'get_product_update_source'),$_value['id_zhout'],$_value['id_stuff_source'],$_value['id_stuff']);
 							break;
 					 // if (type = 2) then get post zhout
 					case 2 : $_zhout_content .= call_user_func(array($this,'get_post_zhout'),$_value['id_zhout']);
@@ -590,7 +590,7 @@
 				switch ( intval($_value['id_type_zhout']))
 				{
 					//if (type = 1) then get_product_update_source
-					case 1 : $_data_zhout_html[] = call_user_func(array($this,'get_wishes_product'),$_value['id_member'],$_value['id_stuff'],$_value['id_zhout'],$_value['id_stuff_source']);
+					case 1 : $_data_zhout_html[] = call_user_func(array($this,'get_product_update_source'),$_value['id_zhout'],$_value['id_stuff_source'],$_value['id_stuff']);
 							break;
 					 // if (type = 2) then get post zhout
 					case 2 : $_data_zhout_html[] = call_user_func(array($this,'get_post_zhout'),$_value['id_zhout']);
