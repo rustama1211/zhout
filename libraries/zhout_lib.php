@@ -48,7 +48,12 @@
 	//sort last update 
 	private $_AJAX_SORT_CURRENT_ACTIVE = 'zhout/ajax_zhout/current_active/';
 	
+	//auto update url
+	private $_AJAX_URL_AUTOUPDATE_ZHOUT = 'zhout/ajax_zhout/auto_update_url/';
 	
+	//interval time
+	private $_INTERVAL_TIME_AT_FIRST = 10000;
+	private $_INTERVAL_TIME_AT_SECOND = 2000;
 	
 	//sort
 	//End Type of ajax is GET
@@ -362,6 +367,94 @@
 					
 				}';
 	}
+	/*------- AUTO UPDATE JAVASCRIPT FUNCTION ----------*/
+	function auto_update_javascript()
+	{
+		return 'var zhoutQueue = [];var first_state_update = false;var autoTimeoutId = 0;var autoIntervalId =0; 
+				function autoUpdate()
+				{
+					
+					
+					if (zhoutQueue.length > 0)
+					{
+						//console.log(\'%o\',\'masuk-2\');
+					 autoIntervalId = setInterval(\'fetchDataZhout()\','.$this->_INTERVAL_TIME_AT_SECOND.');
+					}
+					else
+					{
+						if (! first_state_update)
+						{
+							//console.log(\'%o\',\'masuk-1\');
+							getLatestZhout();
+							
+						}
+						else
+						{
+							//console.log(\'%o\',\'masuk\');
+						autoTimeoutId = setTimeout(\'getLatestZhout()\','.$this->_INTERVAL_TIME_AT_FIRST.');
+						}
+					}
+					
+					
+				}';
+	}
+	
+	function fetch_data_zhout_javascript()
+	{
+		return 'function fetchDataZhout()
+				{
+					//console.log(\'%o\',zhoutQueue);
+					if (zhoutQueue.length > 0 )
+					{
+						$(\'#wrap_zhout\').prepend($(zhoutQueue.pop()));
+					}
+					else
+					{
+						clearInterval(autoIntervalId);
+						autoUpdate();
+					}
+				}';
+	}
+	
+	function get_latest_zhout_javascript()
+	{
+		return 'function getLatestZhout()
+				{
+					var latestIdZhout = $(\'#wrap_zhout\').find(\'.content_status\').eq(0).attr(\'id\');
+					latestIdZhout = latestIdZhout.split(\'-\');
+					$.ajax({url : \''.site_url().'/'.$this->_AJAX_URL_AUTOUPDATE_ZHOUT.'\'+id_member+\'/\'+latestIdZhout[1],
+							success : function (response)
+									{
+										//console.log(\'%o\',\'masuk-3\');
+										var array_json = eval(response);
+										if (array_json.length > 0)
+										{
+											//console.log(\'%o\',\'masuk\');
+											zhoutQueue = array_json;
+											//console.log(\'%o\',zhoutQueue);
+											first_state_update = true;
+											autoUpdate();
+										}
+										else
+										{
+											first_state_update = true;
+											autoUpdate();
+										}
+										
+										
+									}
+							
+						
+					});
+				}';
+	}
+	
+	function main_auto_update_javascript()
+	{
+		return '$(document).ready(function(){autoUpdate();});';
+	}
+	
+	/*------- END AUTO UPDATE JAVASCRIPT FUNCTION ----------*/
 	
 	/* ------- END JAVA SCRIPT ---------- */
 	
@@ -479,8 +572,42 @@
 		return $_zhout_content;
 		 
 	}
+
 	/* ------------- END FETCH DATA ------------- */
 	
+	/* -------------- FETCH DATA FOR LATEST UPDATE ------------- */
+	
+	function get_feeds_zhout_by_latest_update($_id_member,$_latest_zhout)
+	{
+		$_data_zhout_html = array();
+		$_data_zhout = $this->CI->model_zhout->get_latest_zhout_by_latest_zhout($_id_member,$_latest_zhout);
+		if(count($_data_zhout))
+		{	
+			
+			foreach ($_data_zhout as $_value)
+			{
+				
+				switch ( intval($_value['id_type_zhout']))
+				{
+					//if (type = 1) then get_product_update_source
+					case 1 : $_data_zhout_html[] = call_user_func(array($this,'get_wishes_product'),$_value['id_member'],$_value['id_stuff'],$_value['id_zhout'],$_value['id_stuff_source']);
+							break;
+					 // if (type = 2) then get post zhout
+					case 2 : $_data_zhout_html[] = call_user_func(array($this,'get_post_zhout'),$_value['id_zhout']);
+							break;
+					// if (type = 3) then get wishes product
+					case 3 : $_data_zhout_html[] = call_user_func(array($this,'get_wishes_product'),$_value['id_member'],$_value['id_stuff'],$_value['id_zhout'],$_value['id_stuff_source']);
+							break;
+					default :$_data_zhout_html[] ='Cannot Find id_type_zhout on ID Zhout '.$_value['id_zhout'];
+							break;
+				}
+			}
+		
+		}
+		
+	}
+	
+	/* -------------- END FETCH DATA FOR LATEST UPDATE ---------- */
 	
 	/*------------- ZHOUT CONTENT CONDITION -------*/
 	/**

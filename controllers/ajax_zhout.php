@@ -99,6 +99,18 @@
 			echo $this->zhout_lib->current_active($_id_member,$_id_category,$_current_active);
 		}
 		
+		/*---------------- AUTO UPDATE URL --------------*/
+		
+		function auto_update_url($_id_member,$_id_latest_zhout)
+		{
+			$_data =$this->zhout_lib->get_update_zhout($_id_member,$_id_latest_zhout);
+			//$_data = array(0=>'<div>dadd</div>',1=>'<div>dadfsdfsdfd</div>',2=>'<div>rftgtrdtgdgd</div>');
+			echo json_encode($_data);
+		}
+		
+		/*---------------- END AUTO UPDATE URL --------------*/
+		
+		
 		
 	}
 ?>
